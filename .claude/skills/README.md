@@ -12,8 +12,11 @@
 | **train-model** | MLflow + DVC 통합 AI 모델 학습 | Phase 2 | `.claude/skills/train-model/run.sh tcn` |
 | **build-stm32** | STM32 펌웨어 빌드 및 플래시 | Phase 3 | `.claude/skills/build-stm32/run.sh flash` |
 | **android-build** | Android 앱 빌드 및 설치 | Phase 4 | `.claude/skills/android-build/run.sh dtg --install` |
+| **run-tests** | 전체 테스트 스위트 실행 | Phase 3 | `.claude/skills/run-tests/run.sh all` |
+| **code-review** | 자동 코드 품질 검사 및 보안 스캔 | Phase 4 | `.claude/skills/code-review/run.sh --target ai-models/` |
+| **optimize-performance** | 성능 벤치마크 및 최적화 제안 | Phase 5 | `.claude/skills/optimize-performance/run.sh --model tcn` |
+| **update-docs** | API 문서 및 CLAUDE.md 자동 동기화 | Phase 6 | `.claude/skills/update-docs/run.sh --all` |
 | **deploy-ota** | OTA 업데이트 패키지 생성/배포 | Phase 7 | `.claude/skills/deploy-ota/run.sh deploy --version 1.2.0` |
-| **run-tests** | 전체 테스트 스위트 실행 | Phase 6 | `.claude/skills/run-tests/run.sh all` |
 
 ---
 
