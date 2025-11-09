@@ -1,0 +1,253 @@
+# GLEC DTG Edge AI SDK - Git Ignore
+
+# ============================================
+# Python
+# ============================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# ============================================
+# Jupyter Notebook
+# ============================================
+.ipynb_checkpoints/
+*.ipynb
+
+# ============================================
+# Machine Learning
+# ============================================
+# Models
+*.pth
+*.pt
+*.h5
+*.pb
+*.onnx
+*.tflite
+*.dlc
+*.bin
+
+# Training artifacts
+mlruns/
+mlartifacts/
+logs/
+checkpoints/
+models/
+*.log
+
+# DVC
+.dvc/cache/
+.dvc/tmp/
+
+# Datasets (track with DVC instead)
+data-generation/datasets/*.csv
+data-generation/datasets/*.pkl
+*.npy
+*.npz
+
+# ============================================
+# Android
+# ============================================
+*.iml
+.gradle/
+local.properties
+.idea/
+.DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Android NDK
+*.o
+*.so
+*.a
+
+# Signing keys (NEVER commit these!)
+*.jks
+*.keystore
+keystore.properties
+
+# ============================================
+# STM32
+# ============================================
+# STM32CubeIDE
+.settings/
+Debug/
+Release/
+*.elf
+*.hex
+*.map
+*.list
+*.su
+*.d
+*.o
+*.a
+
+# Keil
+*.uvopt
+*.uvoptx
+*.uvproj
+*.uvprojx
+*.__i
+*.__o
+*.map
+*.lst
+*.axf
+
+# ============================================
+# C/C++
+# ============================================
+# Compiled Object files
+*.slo
+*.lo
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.la
+*.lai
+
+# Executables
+*.exe
+*.out
+*.app
+
+# ============================================
+# IDE & Editors
+# ============================================
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains (IntelliJ, CLion, PyCharm)
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Vim
+*.swp
+*.swo
+*~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+
+# ============================================
+# OS Generated
+# ============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# ============================================
+# Documentation
+# ============================================
+docs/_build/
+docs/html/
+docs/latex/
+*.pdf
+
+# ============================================
+# Secrets & Credentials (CRITICAL)
+# ============================================
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# API keys
+*.pem
+*.key
+*.crt
+ca.crt
+client.crt
+client.key
+
+# Credentials
+credentials.json
+secrets.yaml
+*_secret.yaml
+
+# ============================================
+# MQTT & Fleet Integration
+# ============================================
+# SQLite message buffer
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================
+# CARLA Simulator
+# ============================================
+carla/*.egg
+carla/PythonAPI/
+
+# ============================================
+# Temporary Files
+# ============================================
+*.tmp
+*.temp
+*.cache
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+*.cover
+
+# ============================================
+# Custom Skills Logs
+# ============================================
+.claude/skills/*/logs/
+.claude/skills/*/*.log

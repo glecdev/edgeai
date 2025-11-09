@@ -1,0 +1,116 @@
+# GLEC DTG Edge AI SDK - Python Dependencies
+
+# ============================================
+# Deep Learning Frameworks
+# ============================================
+torch==2.1.0
+torchvision==0.16.0
+torchaudio==2.1.0
+tensorflow==2.14.0
+tensorflow-lite==2.14.0
+
+# ============================================
+# ONNX Ecosystem
+# ============================================
+onnx==1.15.0
+onnxruntime==1.16.3
+onnx2tf==1.17.5
+onnx-simplifier==0.4.35
+
+# ============================================
+# Model Optimization & Quantization
+# ============================================
+torch-quantization==0.3.0
+tensorflow-model-optimization==0.7.5
+
+# ============================================
+# Traditional ML & Boosting
+# ============================================
+lightgbm==4.1.0
+xgboost==2.0.2
+scikit-learn==1.3.2
+scipy==1.11.4
+
+# ============================================
+# Experiment Tracking & Versioning
+# ============================================
+mlflow==2.9.0
+dvc==3.35.0
+dvc-s3==3.0.1  # If using S3 for DVC remote storage
+
+# ============================================
+# Data Processing & Augmentation
+# ============================================
+numpy==1.24.3
+pandas==2.1.3
+tsaug==0.2.1  # Time-series augmentation
+matplotlib==3.8.2
+seaborn==0.13.0
+
+# ============================================
+# CAN Bus & Vehicle Communication
+# ============================================
+python-can==4.3.1
+cantools==39.4.0  # DBC file parsing
+
+# ============================================
+# MQTT & IoT Communication
+# ============================================
+paho-mqtt==1.6.1
+pycryptodome==3.19.0  # TLS encryption
+
+# ============================================
+# Testing & Quality Assurance
+# ============================================
+pytest==7.4.3
+pytest-cov==4.1.0
+pytest-xdist==3.5.0  # Parallel test execution
+pytest-timeout==2.2.0
+black==23.12.1  # Code formatting
+pylint==3.0.3
+mypy==1.7.1
+bandit==1.7.5  # Security linting
+
+# ============================================
+# Documentation
+# ============================================
+pdoc3==0.10.0
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+
+# ============================================
+# Utilities
+# ============================================
+pyyaml==6.0.1
+tqdm==4.66.1
+click==8.1.7
+python-dotenv==1.0.0
+requests==2.31.0
+colorama==0.4.6
+
+# ============================================
+# CARLA Simulator (local installation only)
+# ============================================
+# carla==0.9.13  # Must be installed locally with CARLA package
+opencv-python==4.8.1.78  # For CARLA image processing
+
+# ============================================
+# Performance Profiling
+# ============================================
+py-spy==0.3.14
+memory-profiler==0.61.0
+line-profiler==4.1.1
+
+# ============================================
+# Development Tools
+# ============================================
+ipython==8.18.1
+jupyter==1.0.0
+jupyterlab==4.0.9
+notebook==7.0.6
+
+# ============================================
+# API & Web Services
+# ============================================
+fastapi==0.108.0  # Optional: for REST API
+uvicorn==0.25.0  # Optional: ASGI server

@@ -1,0 +1,192 @@
+# GLEC DTG Edge AI - Training Configuration
+
+# ============================================
+# Experiment Tracking
+# ============================================
+mlflow:
+  tracking_uri: "http://localhost:5000"
+  experiment_name: "glec-dtg-edge-ai"
+  artifact_location: "./mlartifacts"
+
+dvc:
+  remote: "s3://glec-dtg-datasets"  # Or local path
+  cache_dir: ".dvc/cache"
+
+# ============================================
+# Dataset Configuration
+# ============================================
+dataset:
+  train_path: "../data-generation/datasets/train.csv"
+  val_path: "../data-generation/datasets/val.csv"
+  test_path: "../data-generation/datasets/test.csv"
+  split_ratios: [0.7, 0.15, 0.15]  # train, val, test
+
+  # Data preprocessing
+  window_size: 60  # 60 seconds at 1Hz
+  features:
+    - vehicle_speed
+    - engine_rpm
+    - throttle_position
+    - brake_pressure
+    - fuel_level
+    - coolant_temp
+    - acceleration_x
+    - acceleration_y
+    - steering_angle
+    - gps_lat
+    - gps_lon
+
+  target_features:
+    - fuel_consumption
+    - carbon_emission
+
+# ============================================
+# TCN Model Configuration
+# ============================================
+tcn:
+  model_name: "tcn_fuel_prediction"
+  input_dim: 10  # Number of input features
+  output_dim: 1  # Fuel consumption prediction
+  num_channels: [64, 128, 256]  # Channel sizes for each layer
+  kernel_size: 3
+  dropout: 0.2
+
+  # Training hyperparameters
+  training:
+    batch_size: 64
+    epochs: 100
+    learning_rate: 0.001
+    optimizer: "adam"
+    loss: "mse"
+    early_stopping_patience: 10
+
+  # Performance targets
+  targets:
+    size_mb: 4  # < 4MB after INT8 quantization
+    latency_ms: 25  # < 25ms inference
+    accuracy: 0.85  # > 85% (R² score)
+
+# ============================================
+# LSTM-Autoencoder Configuration
+# ============================================
+lstm_ae:
+  model_name: "lstm_ae_anomaly_detection"
+  input_dim: 10
+  hidden_dim: 128
+  num_layers: 2
+  latent_dim: 32
+  dropout: 0.2
+
+  training:
+    batch_size: 64
+    epochs: 100
+    learning_rate: 0.001
+    optimizer: "adam"
+    loss: "mse"
+    early_stopping_patience: 10
+
+  # Anomaly detection threshold
+  anomaly_threshold: 0.95  # 95th percentile of reconstruction error
+
+  targets:
+    size_mb: 3
+    latency_ms: 35
+    f1_score: 0.85
+
+# ============================================
+# LightGBM Configuration
+# ============================================
+lightgbm:
+  model_name: "lightgbm_behavior_classification"
+  task: "multiclass"
+  num_classes: 5  # normal, eco, harsh_braking, harsh_accel, anomaly
+
+  # LightGBM parameters
+  params:
+    objective: "multiclass"
+    metric: "multi_logloss"
+    num_leaves: 31
+    learning_rate: 0.05
+    feature_fraction: 0.9
+    bagging_fraction: 0.8
+    bagging_freq: 5
+    verbose: -1
+    num_iterations: 100
+
+  training:
+    early_stopping_rounds: 10
+
+  targets:
+    size_mb: 10
+    latency_ms: 15
+    accuracy: 0.90
+
+# ============================================
+# Quantization Configuration
+# ============================================
+quantization:
+  method: "ptq"  # or "qat" (Quantization-Aware Training)
+  dtype: "int8"  # int8 or int16
+
+  # Post-Training Quantization
+  ptq:
+    calibration_samples: 500
+    calibration_method: "minmax"  # or "entropy", "percentile"
+
+  # Quantization-Aware Training
+  qat:
+    num_epochs: 20
+    freeze_bn: true
+    learning_rate: 0.0001
+
+# ============================================
+# ONNX Export Configuration
+# ============================================
+onnx:
+  opset_version: 13
+  dynamic_axes:
+    input: {0: "batch_size"}
+    output: {0: "batch_size"}
+  optimization: true
+
+  # SNPE compatibility
+  snpe:
+    use_dsp_runtime: true
+    quantization_overrides: true
+
+# ============================================
+# Performance Benchmarking
+# ============================================
+benchmark:
+  device: "cpu"  # or "cuda"
+  num_runs: 100
+  warmup_runs: 10
+
+  targets:
+    total_size_mb: 12  # All models combined < 12MB
+    total_latency_ms: 50  # Sequential inference < 50ms
+    parallel_latency_ms: 30  # Parallel inference < 30ms
+    power_watts: 2.0  # < 2W on Snapdragon DSP
+    memory_mb: 500  # < 500MB RAM usage
+
+# ============================================
+# Hardware Constraints
+# ============================================
+hardware:
+  target_platform: "snapdragon_865"
+  runtime: "snpe"  # Snapdragon Neural Processing Engine
+  accelerator: "dsp"  # or "htp", "gpu"
+
+  # STM32 + Snapdragon system
+  can_sample_rate_hz: 1
+  uart_baud_rate: 921600
+  inference_interval_seconds: 60
+
+# ============================================
+# Logging Configuration
+# ============================================
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  log_file: "./logs/training.log"
+  tensorboard_dir: "./logs/tensorboard"
