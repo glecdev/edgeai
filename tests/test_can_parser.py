@@ -82,10 +82,10 @@ class TestCANParser(unittest.TestCase):
         mode = 0x41
         pid = 0x42
         a = 0x31
-        b = 0x20  # 12544 → 12.544 V
+        b = 0x20  # 12576 → 12.576 V
 
         voltage = ((a * 256) + b) / 1000.0
-        self.assertAlmostEqual(voltage, 12.544, places=3)
+        self.assertAlmostEqual(voltage, 12.576, places=3)
 
     def test_crc16_calculation(self):
         """Test CRC-16 (CCITT) calculation"""
