@@ -1,0 +1,212 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "GLEC DTG Fleet AI Platform Protocol Schemas",
+  "description": "JSON schemas for MQTT message validation",
+
+  "definitions": {
+    "telemetryMessage": {
+      "type": "object",
+      "required": ["vehicle_id", "timestamp", "location", "diagnostics", "ai_results"],
+      "properties": {
+        "vehicle_id": {
+          "type": "string",
+          "pattern": "^GLEC-DTG-[0-9]{3,}$",
+          "description": "Unique vehicle identifier"
+        },
+        "timestamp": {
+          "type": "integer",
+          "minimum": 1600000000000,
+          "description": "Unix timestamp in milliseconds"
+        },
+        "location": {
+          "type": "object",
+          "required": ["lat", "lon", "speed", "heading"],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90,
+              "description": "Latitude in degrees"
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180,
+              "description": "Longitude in degrees"
+            },
+            "speed": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 200,
+              "description": "Speed in km/h"
+            },
+            "heading": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 360,
+              "description": "Heading in degrees (0=North, 90=East)"
+            }
+          }
+        },
+        "diagnostics": {
+          "type": "object",
+          "required": ["engine_rpm", "fuel_level", "battery_voltage"],
+          "properties": {
+            "engine_rpm": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 8000,
+              "description": "Engine RPM"
+            },
+            "fuel_level": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Fuel level percentage"
+            },
+            "battery_voltage": {
+              "type": "number",
+              "minimum": 10,
+              "maximum": 15,
+              "description": "Battery voltage (V)"
+            },
+            "coolant_temp": {
+              "type": "number",
+              "minimum": -40,
+              "maximum": 150,
+              "description": "Coolant temperature (°C)"
+            },
+            "throttle_position": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Throttle position percentage"
+            }
+          }
+        },
+        "ai_results": {
+          "type": "object",
+          "required": ["fuel_efficiency", "safety_score", "carbon_emission"],
+          "properties": {
+            "fuel_efficiency": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 50,
+              "description": "Predicted fuel consumption (L/100km)"
+            },
+            "safety_score": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100,
+              "description": "Safety score (0-100)"
+            },
+            "carbon_emission": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Carbon emission (g CO2/km)"
+            },
+            "anomalies": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["harsh_braking", "harsh_acceleration", "speeding", "sensor_fault", "can_intrusion"]
+              },
+              "description": "Detected anomalies"
+            }
+          }
+        }
+      }
+    },
+
+    "commandMessage": {
+      "type": "object",
+      "required": ["command"],
+      "properties": {
+        "command": {
+          "type": "string",
+          "enum": [
+            "ASSIGN_DISPATCH",
+            "CANCEL_DISPATCH",
+            "UPDATE_ROUTE",
+            "EMERGENCY_ALERT",
+            "FIRMWARE_UPDATE",
+            "CONFIG_UPDATE"
+          ],
+          "description": "Command type"
+        },
+        "dispatch_id": {
+          "type": "string",
+          "pattern": "^D[0-9]{6,}$",
+          "description": "Dispatch identifier"
+        },
+        "destination": {
+          "type": "object",
+          "required": ["lat", "lon"],
+          "properties": {
+            "lat": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "lon": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "address": {
+              "type": "string",
+              "description": "Destination address"
+            }
+          }
+        },
+        "cargo_weight": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 50000,
+          "description": "Cargo weight in kg"
+        },
+        "deadline": {
+          "type": "integer",
+          "description": "Deadline timestamp (ms)"
+        },
+        "firmware_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Firmware download URL"
+        },
+        "config": {
+          "type": "object",
+          "description": "Configuration updates"
+        }
+      }
+    },
+
+    "statusMessage": {
+      "type": "object",
+      "required": ["vehicle_id", "status", "timestamp"],
+      "properties": {
+        "vehicle_id": {
+          "type": "string",
+          "pattern": "^GLEC-DTG-[0-9]{3,}$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["online", "offline", "maintenance", "emergency"]
+        },
+        "timestamp": {
+          "type": "integer"
+        },
+        "details": {
+          "type": "string",
+          "description": "Additional status details"
+        }
+      }
+    }
+  },
+
+  "oneOf": [
+    { "$ref": "#/definitions/telemetryMessage" },
+    { "$ref": "#/definitions/commandMessage" },
+    { "$ref": "#/definitions/statusMessage" }
+  ]
+}

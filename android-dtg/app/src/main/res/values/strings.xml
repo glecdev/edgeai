@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- App Name -->
+    <string name="app_name">GLEC DTG</string>
+
+    <!-- Main Activity -->
+    <string name="title_main">GLEC DTG Service</string>
+    <string name="status_ready">Status: Ready</string>
+    <string name="status_running">Status: Running</string>
+    <string name="status_stopped">Status: Stopped</string>
+    <string name="status_error">Status: Error</string>
+
+    <!-- Buttons -->
+    <string name="button_start_service">Start DTG Service</string>
+    <string name="button_stop_service">Stop DTG Service</string>
+    <string name="button_restart_service">Restart Service</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">DTG Service</string>
+    <string name="notification_channel_description">DTG service is running</string>
+    <string name="notification_title">GLEC DTG Service</string>
+    <string name="notification_text">Monitoring vehicle data and running AI inference</string>
+
+    <!-- Permissions -->
+    <string name="permission_location">Location permission is required for GPS data</string>
+    <string name="permission_bluetooth">Bluetooth permission is required for BLE communication</string>
+    <string name="permission_denied">Please grant all permissions to use this app</string>
+
+    <!-- Status Messages -->
+    <string name="mqtt_connected">Connected to Fleet AI Platform</string>
+    <string name="mqtt_disconnected">Disconnected from Fleet AI Platform</string>
+    <string name="mqtt_connecting">Connecting to Fleet AI Platform…</string>
+
+    <string name="can_data_collecting">Collecting CAN data (1Hz)</string>
+    <string name="can_data_error">CAN data collection error</string>
+
+    <string name="ai_inference_running">Running AI inference…</string>
+    <string name="ai_inference_complete">AI inference completed</string>
+    <string name="ai_inference_error">AI inference error</string>
+
+    <!-- AI Results -->
+    <string name="fuel_efficiency_label">Fuel Efficiency</string>
+    <string name="fuel_efficiency_value">%.1f L/100km</string>
+    <string name="safety_score_label">Safety Score</string>
+    <string name="safety_score_value">%d / 100</string>
+    <string name="carbon_emission_label">Carbon Emission</string>
+    <string name="carbon_emission_value">%.1f g CO₂/km</string>
+
+    <!-- Anomalies -->
+    <string name="anomaly_harsh_braking">Harsh Braking Detected</string>
+    <string name="anomaly_harsh_acceleration">Harsh Acceleration Detected</string>
+    <string name="anomaly_speeding">Speeding Detected</string>
+    <string name="anomaly_sensor_fault">Sensor Fault Detected</string>
+    <string name="anomaly_can_intrusion">CAN Bus Intrusion Detected</string>
+
+    <!-- Errors -->
+    <string name="error_snpe_load">Failed to load AI models</string>
+    <string name="error_uart_read">UART communication error</string>
+    <string name="error_mqtt_connect">Failed to connect to MQTT broker</string>
+    <string name="error_ble_connection">BLE connection error</string>
+
+    <!-- Settings (future expansion) -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_vehicle_id">Vehicle ID</string>
+    <string name="settings_mqtt_broker">MQTT Broker</string>
+    <string name="settings_mqtt_port">MQTT Port</string>
+    <string name="settings_inference_interval">Inference Interval (seconds)</string>
+</resources>

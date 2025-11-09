@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors (GLEC Brand) -->
+    <color name="primary">#1976D2</color>
+    <color name="primary_dark">#1565C0</color>
+    <color name="primary_light">#42A5F5</color>
+    <color name="accent">#FF5722</color>
+
+    <!-- Background Colors -->
+    <color name="background">#FFFFFF</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface">#F5F5F5</color>
+    <color name="surface_dark">#1E1E1E</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="text_hint">#9E9E9E</color>
+    <color name="text_on_primary">#FFFFFF</color>
+
+    <!-- Status Colors -->
+    <color name="status_success">#4CAF50</color>
+    <color name="status_warning">#FF9800</color>
+    <color name="status_error">#F44336</color>
+    <color name="status_info">#2196F3</color>
+
+    <!-- Sensor Data Colors -->
+    <color name="fuel_good">#4CAF50</color>
+    <color name="fuel_warning">#FF9800</color>
+    <color name="fuel_critical">#F44336</color>
+
+    <color name="safety_high">#4CAF50</color>
+    <color name="safety_medium">#FF9800</color>
+    <color name="safety_low">#F44336</color>
+
+    <!-- Chart Colors -->
+    <color name="chart_speed">#2196F3</color>
+    <color name="chart_rpm">#FF5722</color>
+    <color name="chart_throttle">#4CAF50</color>
+    <color name="chart_brake">#F44336</color>
+
+    <!-- Divider -->
+    <color name="divider">#BDBDBD</color>
+
+    <!-- Black & White -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+
+    <!-- Transparent -->
+    <color name="transparent">#00000000</color>
+</resources>
