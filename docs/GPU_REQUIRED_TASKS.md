@@ -6,24 +6,22 @@
 
 ## 📋 Task List
 
-### 1. CARLA Data Generation
-**Status**: Pending
+### 1. Data Generation
+**Status**: ✅ **Backup Ready** (Synthetic simulator available)
 **Priority**: High
-**Estimated Time**: 8-10 hours (overnight run)
+**Estimated Time**: 2-10 hours
 
-**Requirements**:
+**Option A: CARLA Simulator** (GPU Required, 8-10 hours)
 - GPU: NVIDIA RTX 2070 or better
 - RAM: 32GB minimum
-- CARLA Simulator 0.9.13+ installed
-- Python environment with carla package
+- CARLA Simulator 0.9.15+ installed
 
-**Commands**:
 ```bash
 # Start CARLA server
 cd /path/to/CARLA
 ./CarlaUE4.sh
 
-# Generate 10,000 episodes (5-minute each)
+# Generate 10,000 episodes
 cd data-generation/carla-scenarios
 python generate_driving_data.py \
     --episodes 10000 \
@@ -31,13 +29,34 @@ python generate_driving_data.py \
     --weather random \
     --traffic dense \
     --output ../datasets/carla_full.csv
-
-# Expected output: ~50,000 data samples (10,000 episodes × 300 seconds × 1Hz / 60)
 ```
 
+**Option B: Synthetic Simulator** ✅ (CPU Only, 2 hours)
+- ✅ **Available now** - Physics-based synthetic data generator
+- No GPU required, runs on CPU
+- Generates realistic driving data with 5 behavior types
+
+```bash
+# Generate 35,000 samples (train/val/test split)
+cd data-generation
+python synthetic_driving_simulator.py \
+    --output-dir ../datasets \
+    --samples 35000
+
+# Output:
+#   datasets/train.csv (28,000 samples)
+#   datasets/val.csv (3,500 samples)
+#   datasets/test.csv (3,500 samples)
+```
+
+**Data Distribution**:
+- Eco driving: 30% (부드러운 가감속)
+- Normal driving: 55% (일반 주행)
+- Aggressive driving: 15% (급가속/급감속)
+
 **Output**:
-- `datasets/carla_full.csv` (~500MB-1GB)
-- Training data with labels: normal, eco_driving, harsh_braking, harsh_acceleration, anomaly
+- Training data with labels: `eco_driving`, `normal`, `aggressive`, `highway`, `urban`
+- Features: 15 columns (speed, RPM, throttle, brake, fuel, IMU, GPS, etc.)
 
 ---
 

@@ -4,6 +4,8 @@
 
 Edge AI system for real-time vehicle data analysis running on STM32 MCU + Qualcomm Snapdragon Android hardware.
 
+**🔓 100% Open Source** - PyTorch, LightGBM, TFLite, ONNX
+
 ---
 
 ## 🎯 Project Overview
@@ -273,27 +275,35 @@ See [docs/INTEGRATION_ANALYSIS.md](docs/INTEGRATION_ANALYSIS.md) for complete an
 
 ---
 
-## 🧪 AI Model Stack
+## 🧪 AI Model Stack (100% Open Source)
 
 ### 1. TCN (Temporal Convolutional Network)
+**Framework**: PyTorch 2.0+ (BSD License)
 **Purpose**: Fuel consumption prediction, speed pattern analysis
 - Size: 2-4MB (INT8 quantized)
 - Latency: 15-25ms
 - Accuracy: 85-90%
+- Architecture: 3-layer dilated causal convolution with residual connections
 
 ### 2. LSTM-Autoencoder
+**Framework**: PyTorch 2.0+ (BSD License)
 **Purpose**: Anomaly detection (dangerous driving, CAN intrusion, sensor faults)
 - Size: 2-3MB (INT8 quantized)
 - Latency: 25-35ms
 - F1-Score: 0.85-0.92
+- Architecture: 2-layer LSTM encoder-decoder with 32-dim latent space
 
 ### 3. LightGBM
+**Framework**: LightGBM (MIT License, Microsoft)
 **Purpose**: Carbon emission estimation, driving behavior classification
 - Size: 5-10MB
 - Latency: 5-15ms
 - Accuracy: 90-95%
+- Architecture: Gradient Boosting Decision Tree (GBDT)
 
 **Total**: ~12MB models, 30ms parallel inference (60ms sequential)
+
+**Deployment**: TFLite (Apache 2.0), ONNX Runtime (MIT), SNPE (BSD-3-Clause)
 
 ---
 
@@ -397,6 +407,27 @@ PYTHONPATH=/home/user/edgeai python -m unittest tests.test_realtime_integration
 
 # Physics validation (20+ tests)
 PYTHONPATH=/home/user/edgeai python -m unittest tests.test_physics_validation
+
+# Synthetic data generator (15+ tests) ⭐ NEW
+pytest tests/test_synthetic_simulator.py -v
+
+# AI models (35+ tests) ⭐ NEW
+pytest ai-models/tests/test_tcn.py -v
+pytest ai-models/tests/test_lstm_ae.py -v
+pytest ai-models/tests/test_lightgbm.py -v
+```
+
+### Data Generation
+
+```bash
+# Generate synthetic training data (35,000 samples)
+cd data-generation
+python synthetic_driving_simulator.py --output-dir ../datasets --samples 35000
+
+# Output:
+#   datasets/train.csv (28,000 samples, 80%)
+#   datasets/val.csv (3,500 samples, 10%)
+#   datasets/test.csv (3,500 samples, 10%)
 ```
 
 ### Integration Tests
@@ -414,10 +445,11 @@ python tests/benchmark_inference.py --model tcn
 ## 📚 Documentation
 
 - [CLAUDE.md](CLAUDE.md) - Development guide (TDD workflow)
-- [docs/INTEGRATION_ANALYSIS.md](docs/INTEGRATION_ANALYSIS.md) - Production integration plan ⭐
+- [docs/OPENSOURCE_EDGE_AI_STRATEGY.md](docs/OPENSOURCE_EDGE_AI_STRATEGY.md) - Open source AI implementation strategy ⭐ **NEW**
+- [docs/INTEGRATION_ANALYSIS.md](docs/INTEGRATION_ANALYSIS.md) - Production integration plan
 - [docs/PROJECT_STATUS.md](docs/PROJECT_STATUS.md) - Current status & metrics
 - [docs/PHASE3_TESTING.md](docs/PHASE3_TESTING.md) - Testing strategy
-- [docs/GPU_REQUIRED_TASKS.md](docs/GPU_REQUIRED_TASKS.md) - Local GPU tasks
+- [docs/GPU_REQUIRED_TASKS.md](docs/GPU_REQUIRED_TASKS.md) - Local GPU tasks (with synthetic data option)
 - [docs/RECURSIVE_WORKFLOW.md](docs/RECURSIVE_WORKFLOW.md) - 7-phase development cycle
 
 ---
