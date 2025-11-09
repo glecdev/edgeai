@@ -84,17 +84,38 @@ class SyntheticDrivingSimulator:
             'steering_angle': 0.0,  # degrees
         }
 
-    def generate_scenario(self, scenario: DrivingScenario, add_noise: bool = True) -> pd.DataFrame:
+    def generate_scenario(self, scenario: DrivingScenario, add_noise: bool = True, seed: int = None) -> pd.DataFrame:
         """
         주행 시나리오에 따른 데이터 생성
 
         Args:
             scenario: 시나리오 설정
             add_noise: 센서 노이즈 추가 여부
+            seed: 랜덤 시드 (None이면 시나리오 이름 기반 시드 사용)
 
         Returns:
             시간별 차량 데이터 DataFrame
         """
+        # 재현 가능한 시나리오 생성을 위한 시드 설정
+        if seed is None:
+            # 시나리오 이름을 기반으로 시드 생성 (재현성 보장)
+            seed = hash(scenario.name) % (2**31)
+        np.random.seed(seed)
+
+        # Reset simulator state for reproducibility
+        self.state = {
+            'speed': 0.0,  # km/h
+            'acceleration': 0.0,  # m/s²
+            'rpm': 800.0,  # idle
+            'throttle': 0.0,  # %
+            'brake': 0.0,  # %
+            'position': 0.0,  # meters
+            'fuel_consumed': 0.0,  # liters
+            'fuel_level': 100.0,  # %
+            'coolant_temp': 85.0,  # °C
+            'steering_angle': 0.0,  # degrees
+        }
+
         num_samples = scenario.duration_seconds * self.sampling_rate
         data_points = []
 
@@ -110,7 +131,7 @@ class SyntheticDrivingSimulator:
                 target_speed=target_speed,
                 behavior=scenario.behavior,
                 accel_limit=scenario.acceleration_limit,
-                brake_limit=scenario.brake_limit
+                brake_limit=scenario.braking_limit
             )
 
             # 센서 데이터 생성
@@ -210,15 +231,22 @@ class SyntheticDrivingSimulator:
         self.state['position'] += new_speed_ms * self.dt
 
         # RPM 계산 (기어비 고려)
-        # 가정: 5단 기어, 최종 기어비 3.5
-        if self.state['speed'] < 1.0:
-            self.state['rpm'] = 800.0  # idle
+        # 공식: RPM = (속도 × gear_ratio × final_drive × 60) / (타이어 둘레)
+        if self.state['speed'] < 5.0:  # Very low speed
+            # idle RPM varies slightly with throttle (800-1200)
+            idle_rpm = 800.0 + (self.state['throttle'] / 100.0) * 400.0
+            self.state['rpm'] = idle_rpm
         else:
-            # RPM = (속도 × 기어비 × 60) / (바퀴 둘레 × 기어단)
+            # 현실적인 기어비 (transmission × final_drive 3.73)
             gear = self._get_gear(self.state['speed'])
-            gear_ratios = [3.5, 2.0, 1.3, 1.0, 0.8]
-            self.state['rpm'] = (new_speed_ms * gear_ratios[gear-1] * 60) / (2.0 * np.pi * 0.3)
-            self.state['rpm'] = np.clip(self.state['rpm'], 800, 6500)
+            # Combined gear ratios (transmission + final drive)
+            gear_ratios = [15.0, 9.0, 6.0, 4.5, 3.5]  # Higher ratios for realistic RPM
+
+            # 타이어: 205/60R16 (둘레 약 2.02m)
+            wheel_circumference = 2.02  # meters
+            wheel_rpm = (new_speed_ms * 60) / wheel_circumference
+            engine_rpm = wheel_rpm * gear_ratios[gear-1]
+            self.state['rpm'] = np.clip(engine_rpm, 800, 6500)
 
         # 연료 소비 계산
         # 연료 소비 = (RPM × 스로틀) / 효율
@@ -232,19 +260,21 @@ class SyntheticDrivingSimulator:
         temp_diff = target_temp - self.state['coolant_temp']
         self.state['coolant_temp'] += temp_diff * 0.01  # 서서히 변화
 
-        # 조향각 (간단한 모델)
-        self.state['steering_angle'] += np.random.normal(0, 2)
+        # 조향각 (간단한 모델) - deterministic update
+        # Small periodic variation to simulate lane keeping
+        self.state['steering_angle'] = np.sin(self.state['position'] / 100) * 5
         self.state['steering_angle'] = np.clip(self.state['steering_angle'], -45, 45)
 
     def _get_gear(self, speed_kmh: float) -> int:
-        """속도에 따른 기어 선택"""
-        if speed_kmh < 20:
+        """속도에 따른 기어 선택 (부드러운 RPM 곡선을 위해 조정)"""
+        # Adjusted shift points for smoother RPM correlation
+        if speed_kmh < 15:
             return 1
-        elif speed_kmh < 40:
+        elif speed_kmh < 30:
             return 2
-        elif speed_kmh < 60:
+        elif speed_kmh < 50:
             return 3
-        elif speed_kmh < 80:
+        elif speed_kmh < 70:
             return 4
         else:
             return 5
@@ -269,8 +299,8 @@ class SyntheticDrivingSimulator:
             'steering_angle': self.state['steering_angle'],
 
             # GPS (더미 데이터)
-            'gps_lat': 37.5665 + np.random.normal(0, 0.0001),
-            'gps_lon': 126.9780 + np.random.normal(0, 0.0001),
+            'gps_lat': 37.5665,
+            'gps_lon': 126.9780,
 
             # 연료 소비량 (계산값)
             'fuel_consumption': self._calculate_fuel_consumption(),
@@ -289,11 +319,20 @@ class SyntheticDrivingSimulator:
                 'acceleration_y': 0.05,
                 'acceleration_z': 0.02,
                 'steering_angle': 0.5,
+                'gps_lat': 0.0001,
+                'gps_lon': 0.0001,
             }
 
             for key, noise_std in noise_levels.items():
                 if key in data:
                     data[key] += np.random.normal(0, noise_std)
+
+            # Clip values to valid ranges only after noise addition
+            data['throttle_position'] = np.clip(data['throttle_position'], 0, 100)
+            data['brake_pressure'] = np.clip(data['brake_pressure'], 0, 100)
+            data['fuel_level'] = np.clip(data['fuel_level'], 0, 100)
+            data['vehicle_speed'] = np.clip(data['vehicle_speed'], 0, 200)
+            data['engine_rpm'] = np.clip(data['engine_rpm'], 0, 7000)
 
         return data
 
@@ -303,13 +342,25 @@ class SyntheticDrivingSimulator:
             return 0.0  # 정차 중
 
         # 연료 소비 = (MAF × 시간) / (거리 × 연료 밀도)
-        # 간단한 모델: RPM과 스로틀에 비례
-        maf = (self.state['rpm'] / 6500.0) * (self.state['throttle'] / 100.0) * 10.0  # g/s
-        fuel_rate = maf / 14.7  # 공연비 14.7:1 (이론적)
-        fuel_per_second = fuel_rate / 1000.0  # L/s
+        # 더 현실적인 모델: 1.5L 엔진 기준
+        # RPM과 스로틀에 비례, 엔진 배기량 고려
+        engine_displacement = 1.5  # L
+        rpm_factor = self.state['rpm'] / 6500.0
+        throttle_factor = max(0.15, self.state['throttle'] / 100.0)  # 최소 15% (크루징)
 
-        distance_per_second = self.state['speed'] / 3600.0  # km/s
-        fuel_per_100km = (fuel_per_second / distance_per_second) * 100.0 if distance_per_second > 0 else 0.0
+        # MAF (Mass Air Flow) in g/s - 더 현실적인 값
+        maf = rpm_factor * throttle_factor * engine_displacement * 80.0  # g/s
+
+        # 연료 소비량 (공연비 14.7:1)
+        fuel_rate_g_per_s = maf / 14.7  # g/s
+        fuel_rate_L_per_h = (fuel_rate_g_per_s * 3600) / 750.0  # L/h (가솔린 밀도 750g/L)
+
+        # L/100km 계산
+        distance_per_hour = self.state['speed']  # km/h
+        if distance_per_hour > 0.1:
+            fuel_per_100km = (fuel_rate_L_per_h / distance_per_hour) * 100.0
+        else:
+            fuel_per_100km = 0.0
 
         return np.clip(fuel_per_100km, 0, 30)  # 0-30 L/100km
 
