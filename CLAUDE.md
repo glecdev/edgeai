@@ -1,730 +1,672 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+**This file provides guidance to Claude Code when working in this repository.**
 
-## Project Overview
+---
 
-GLEC DTG Edge AI SDK - An edge AI system for commercial vehicle telematics running on STM32 MCU + Qualcomm Snapdragon Android hardware. The system performs real-time vehicle data collection via CAN bus and provides AI-powered driving efficiency, safety, and carbon emission analysis.
+## 🚨 IMMEDIATE DIRECTIVES - Read This First!
 
-### Hardware Platform
-- **STM32**: CAN bus interface, sensor management, real-time operations (<1ms response)
-- **Qualcomm Snapdragon**: Android OS, AI inference (DSP/HTP acceleration), application layer
-- **Communication**: UART 921600 baud (STM32 ↔ Snapdragon), CAN bus (vehicle), BLE (driver app)
+**Always check current phase status before starting any task:**
+1. See `docs/GPU_REQUIRED_TASKS.md` for GPU-dependent tasks (Phase 2 local)
+2. See `docs/PHASE3_TESTING.md` for testing requirements (Phase 3)
+3. Current branch: `claude/artifact-701ca010-011CUxNEi8V3zxgnuGp9E8Ss`
+
+### Quick Decision Tree
+
+```
+┌─ Is task GPU-dependent? (CARLA, model training, quantization)
+│  YES → Document in GPU_REQUIRED_TASKS.md, defer to local environment
+│  NO  → Continue below
+│
+├─ Can task run in web environment?
+│  NO (requires: Android build, STM32 compile, hardware) → Document and defer
+│  YES → Continue with TDD workflow below
+│
+└─ Implementing new feature or fixing bug?
+   → Follow Red-Green-Refactor cycle (see below)
+```
+
+### Environment Constraints (Web-Based Development)
+
+**Available**:
+✅ Python scripting (data generation, tests, utilities)
+✅ Kotlin/Java source code (Android apps)
+✅ C/C++ source code (STM32 firmware)
+✅ Documentation and configuration files
+✅ Git operations
+
+**NOT Available** (Defer to local):
+❌ GPU operations (CARLA, model training)
+❌ Android builds (`./gradlew assembleDebug`)
+❌ STM32 firmware compilation (`make`)
+❌ Hardware testing (CAN bus, BLE, sensors)
+❌ SNPE/TFLite model conversion
+
+---
+
+## 🔴🟢🔵 Red-Green-Refactor: The Core Development Cycle
+
+**You are an expert practitioner of Test-Driven Development (TDD) and the Red-Green-Refactor cycle.**
+
+### The Three States
+
+1. **🔴 RED**: Write a failing test first
+   - Test describes desired behavior
+   - Test fails because feature doesn't exist yet
+   - Compile errors are also "red"
+
+2. **🟢 GREEN**: Write minimal code to make test pass
+   - Only enough to pass the test
+   - Don't worry about elegance yet
+   - Shortcuts are okay if they work
+
+3. **🔵 REFACTOR**: Improve code structure without changing behavior
+   - Extract functions
+   - Rename for clarity
+   - Remove duplication
+   - **SEPARATE COMMIT** from behavioral changes
+
+### TDD Workflow (Step-by-Step)
+
+When given a task like "Add harsh braking detection":
+
+**Step 1 - RED**: Write the test first
+```python
+# tests/test_anomaly_detection.py
+def test_harsh_braking_detection():
+    """Test that harsh braking is detected when deceleration < -4 m/s²"""
+    can_data = CANData(
+        acceleration_x=-5.0,  # Harsh deceleration
+        brake_position=80.0,
+        vehicle_speed=60.0,
+        # ... other fields
+    )
+
+    assert can_data.isHarshBraking() == True  # FAILS - method doesn't exist
+```
+
+Run test: `pytest tests/test_anomaly_detection.py -v`
+**Expected**: ❌ Test fails (AttributeError: isHarshBraking)
+
+**Step 2 - GREEN**: Write minimal code to pass
+```kotlin
+// CANData.kt
+fun isHarshBraking(): Boolean {
+    return accelerationX < -4.0f && brakePosition > 50.0f
+}
+```
+
+Run test: `pytest tests/test_anomaly_detection.py -v`
+**Expected**: ✅ Test passes
+
+**Step 3 - REFACTOR** (if needed, separate commit):
+```kotlin
+// Extract threshold constants
+companion object {
+    private const val HARSH_BRAKING_THRESHOLD = -4.0f
+    private const val BRAKE_ACTIVATION_THRESHOLD = 50.0f
+}
+
+fun isHarshBraking(): Boolean {
+    return accelerationX < HARSH_BRAKING_THRESHOLD &&
+           brakePosition > BRAKE_ACTIVATION_THRESHOLD
+}
+```
+
+**Step 4 - COMMIT** (see Commit Discipline below)
+
+---
+
+## 📝 Commit Discipline: Tidy First
+
+**NEVER mix structural and behavioral changes in a single commit.**
+
+### Two Types of Changes
+
+**STRUCTURAL CHANGES** (code reorganization, no behavior change):
+- Extracting functions or classes
+- Renaming variables/functions/files
+- Moving code between files
+- Formatting, comments, documentation
+- Removing dead code
+- Commit prefix: `refactor:`, `docs:`, `style:`
+
+**BEHAVIORAL CHANGES** (functionality change):
+- Adding new features
+- Fixing bugs
+- Changing logic or algorithms
+- Modifying data structures
+- Commit prefix: `feat:`, `fix:`, `perf:`
+
+### Tidy First Principle
+
+When you notice code needs both:
+1. **First commit** (structural): Clean up the code
+2. **Second commit** (behavioral): Add the new feature
+
+Example:
+```bash
+# BAD (mixed changes)
+git commit -m "refactor CAN parser and add anomaly detection"
+
+# GOOD (separated)
+git commit -m "refactor: Extract CAN message parsing to dedicated class"
+git commit -m "feat: Add harsh braking anomaly detection
+
+- Detect deceleration < -4 m/s²
+- Requires brake position > 50%
+- Add test coverage for edge cases"
+```
+
+### Commit Message Format
+
+```
+<type>(<scope>): <subject>
+
+<body>
+
+<footer>
+```
+
+**Types**: `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `perf`, `chore`
+
+**Examples**:
+```
+feat(android-dtg): Add real-time anomaly detection
+
+- Implement harsh braking detection (accel < -4 m/s²)
+- Implement harsh acceleration detection (accel > 3 m/s²)
+- Add UI alerts for detected anomalies
+- Test coverage: 95%
+
+Closes #42
+```
+
+```
+refactor(can-parser): Extract OBD-II parsing logic
+
+- Move PID parsing to separate class
+- Add type safety with sealed classes
+- Improve readability with extension functions
+- No behavior changes
+
+Part of #38
+```
+
+---
+
+## 🐛 Defect Handling Protocol
+
+When fixing bugs, follow this specific sequence:
+
+**Step 1**: Write API-level failing test
+```python
+def test_fuel_calculation_doesnt_crash_on_zero_speed():
+    """High-level test showing user impact"""
+    result = calculate_fuel_efficiency(speed=0.0, maf=5.0)
+    assert result == 0.0  # Should return 0, not crash
+```
+
+**Step 2**: Write minimal reproduction test
+```python
+def test_division_by_zero_in_fuel_formula():
+    """Specific bug reproduction for debugging"""
+    speed = 0.0
+    maf = 5.0
+    # This line causes ZeroDivisionError
+    fuel_per_km = (maf / 14.7 * 3600 / 750) / speed * 100
+```
+
+**Step 3**: Fix to make both tests pass
+```python
+def calculate_fuel_efficiency(speed: float, maf: float) -> float:
+    if speed < 1.0 or maf < 0.1:  # Guard against division by zero
+        return 0.0
+    return (maf / 14.7 * 3600 / 750) / speed * 100
+```
+
+**Step 4**: Commit with context
+```
+fix: Prevent division by zero in fuel efficiency calculation
+
+- Add guard clause for zero/near-zero speed
+- Return 0.0 instead of crashing
+- Add regression tests (API-level and unit-level)
+
+Fixes #127
+```
+
+---
+
+## 🔄 Complete Development Workflow
+
+Execute these steps in order for every task:
+
+### 1. PLAN
+- Read current phase requirements (`GPU_REQUIRED_TASKS.md` or `PHASE3_TESTING.md`)
+- Create todo list: `TodoWrite` tool
+- Identify if task is web-compatible or requires local environment
+- Design approach, identify affected files
+
+### 2. RED - Write Failing Test
+```bash
+# Python
+pytest tests/test_new_feature.py -v  # Should fail
+
+# Android (Kotlin)
+cd android-dtg
+./gradlew testDebugUnitTest  # Should fail
+
+# STM32 (if applicable)
+cd stm32-firmware
+make test  # Should fail
+```
+
+### 3. GREEN - Implement Minimal Code
+- Write only enough code to pass the test
+- Don't optimize yet
+- Run test again: `pytest tests/test_new_feature.py -v`  # Should pass
+
+### 4. VERIFY - Run Full Test Suite
+```bash
+# Ensure no regressions
+pytest tests/ -v --cov
+
+# Check coverage target (>80%)
+pytest tests/ --cov-report=html
+open htmlcov/index.html
+```
+
+### 5. REFACTOR - Improve Structure (Optional, Separate Commit)
+If code needs improvement:
+```bash
+# Commit behavioral change first
+git add tests/ src/
+git commit -m "feat: Add harsh braking detection"
+
+# Then refactor (separate commit)
+git add src/
+git commit -m "refactor: Extract braking threshold constants"
+```
+
+### 6. DOCUMENT
+- Update relevant docs if API changed
+- Add docstrings to new functions
+- Update CLAUDE.md if workflow changed
+
+### 7. COMMIT & PUSH
+```bash
+# Semantic commit message
+git add -A
+git commit -m "feat(scope): Description
+
+- Bullet points of changes
+- Performance impacts
+- Breaking changes if any
+
+Closes #issue"
+
+# Push to feature branch
+git push -u origin claude/artifact-701ca010-011CUxNEi8V3zxgnuGp9E8Ss
+```
+
+### 8. REPEAT
+Mark current todo as complete, move to next task
+
+---
+
+## 🎯 Quality Gates
+
+Before committing, verify:
+
+**Test Quality Gates**:
+- [ ] All tests passing (`pytest tests/ -v`)
+- [ ] Coverage >80% for new code
+- [ ] No regressions in existing tests
+- [ ] Performance targets met (if applicable)
+
+**Code Quality Gates**:
+- [ ] No mixed structural/behavioral changes
+- [ ] Clear, descriptive commit message
+- [ ] Documentation updated if needed
+- [ ] No security vulnerabilities introduced
+
+**Review Questions**:
+- [ ] Is this the minimal change to achieve the goal?
+- [ ] Are structural and behavioral changes separated?
+- [ ] Does the test clearly describe the expected behavior?
+- [ ] Will another developer understand this in 6 months?
+
+---
+
+## 📚 Project Context: GLEC DTG Edge AI SDK
+
+**An edge AI system for commercial vehicle telematics running on STM32 MCU + Qualcomm Snapdragon Android hardware.**
 
 ### Core Requirements
-- **Model Size**: < 100MB
-- **Inference Latency**: < 50ms
-- **Power Consumption**: < 2W
-- **Accuracy**: > 85%
+- **Model Size**: < 100MB total
+- **Inference Latency**: < 50ms (P95)
+- **Power Consumption**: < 2W average
+- **Accuracy**: > 85% for behavior classification
 - **Data Collection**: 1Hz from CAN bus
 - **AI Inference**: Every 60 seconds
 
-## Repository Structure
+### Hardware Platform
+- **STM32 MCU**: CAN bus interface, sensor management, real-time operations (<1ms response)
+- **Qualcomm Snapdragon**: Android OS, AI inference (DSP/HTP acceleration), application layer
+- **Communication**: UART 921600 baud (STM32 ↔ Snapdragon), CAN bus (vehicle), BLE (driver app)
+
+### Repository Structure
 
 ```
 edgeai/
 ├── ai-models/              # Edge AI model development
-│   ├── training/           # Model training scripts (PyTorch/TensorFlow)
-│   ├── optimization/       # Quantization, pruning, QAT scripts
-│   ├── conversion/         # ONNX → TFLite/SNPE DLC conversion
-│   └── simulation/         # CARLA simulator integration
-├── stm32-firmware/         # STM32 CAN bridge firmware
-│   ├── Core/               # HAL drivers, main loop
-│   ├── Drivers/            # CAN, UART, sensor interfaces
-│   └── Middlewares/        # Protocol buffers, CRC validation
+│   ├── training/           # PyTorch/TensorFlow training scripts
+│   ├── optimization/       # Quantization (PTQ/QAT), pruning
+│   ├── conversion/         # ONNX → TFLite/SNPE DLC
+│   └── tests/              # Model unit tests (TCN, LSTM-AE, LightGBM)
+│
 ├── android-dtg/            # DTG device Android application
-│   ├── app/src/main/
-│   │   ├── java/           # Kotlin/Java application code
-│   │   ├── cpp/            # JNI bridge for UART/SNPE
-│   │   └── assets/         # AI models (.dlc, .tflite)
-│   └── snpe-integration/   # SNPE runtime wrapper
+│   ├── app/src/main/java/  # Kotlin/Java (Services, UI, BLE)
+│   ├── app/src/main/cpp/   # JNI bridge for UART/SNPE
+│   └── app/src/test/       # Unit tests
+│
 ├── android-driver/         # Driver smartphone application
-│   ├── app/src/main/
-│   │   ├── java/           # BLE, external APIs, UI
-│   │   └── res/            # Layouts, resources
-│   └── voice-module/       # Vosk STT, TTS, Porcupine
+│   ├── app/src/main/java/  # BLE client, Voice AI, External APIs
+│   └── app/src/test/       # Unit tests
+│
+├── stm32-firmware/         # STM32 CAN bridge firmware
+│   ├── Core/               # HAL drivers, main loop, CAN/UART
+│   └── Tests/              # Hardware-in-loop tests
+│
 ├── fleet-integration/      # Fleet AI platform connectivity
-│   ├── mqtt-client/        # MQTT over TLS implementation
-│   └── protocol/           # JSON schemas, message formats
+│   └── mqtt-client/        # MQTT over TLS, offline queuing
+│
 ├── data-generation/        # Synthetic data generation
-│   ├── carla-scenarios/    # CARLA simulator scripts
-│   ├── can-simulation/     # CANdevStudio configs
-│   └── augmentation/       # Time-series augmentation (tsaug)
-└── docs/                   # Architecture, API documentation
+│   ├── carla-scenarios/    # CARLA simulator integration (GPU)
+│   └── augmentation/       # Time-series augmentation
+│
+├── tests/                  # Integration tests
+│   ├── e2e_test.py         # End-to-end data flow validation
+│   ├── data_validator.py   # Dataset quality checks
+│   ├── benchmark_inference.py  # Performance benchmarking
+│   └── test_can_parser.py  # CAN protocol unit tests
+│
+└── docs/                   # Documentation
+    ├── GPU_REQUIRED_TASKS.md      # Phase 2 local tasks (GPU)
+    ├── PHASE3_TESTING.md          # Testing strategy
+    └── RECURSIVE_WORKFLOW.md      # Detailed workflow guide
 ```
+
+### AI Model Stack
+1. **TCN**: Fuel consumption prediction (2-4MB, 15-25ms, 85-90% accuracy)
+2. **LSTM-Autoencoder**: Anomaly detection (2-3MB, 25-35ms, F1 0.85-0.92)
+3. **LightGBM**: Behavior classification (5-10MB, 5-15ms, 90-95% accuracy)
+
+**Total**: ~12MB models, 30ms parallel inference
 
 ---
 
-## 🔄 Recursive Improvement Workflow System
+## 🛠️ Common Workflows
 
-### Core Philosophy: Plan → Implement → Test → Review → Improve → Document → Commit
-
-This project follows a **world-class recursive improvement workflow** designed for continuous quality enhancement and knowledge accumulation.
-
-**Full Documentation**: See [`docs/RECURSIVE_WORKFLOW.md`](docs/RECURSIVE_WORKFLOW.md) for complete details.
-
-### Quick Workflow Guide
-
-#### 7-Phase Development Cycle
-
-```
-1️⃣ PLAN      → Design architecture, create todos, Memory MCP
-2️⃣ IMPLEMENT → TDD, Skills automation, incremental commits
-3️⃣ TEST      → Unit (>80%), Integration, Performance benchmarks
-4️⃣ REVIEW    → Code quality, security, architecture (use code-review skill)
-5️⃣ IMPROVE   → Optimize performance, refactor, extract patterns
-6️⃣ DOCUMENT  → API docs, diagrams, CLAUDE.md sync
-7️⃣ COMMIT    → Semantic commits, tags, changelog, CI/CD
-```
-
-#### Custom Skills for Workflow Automation
-
-| Skill | Purpose | Usage |
-|-------|---------|-------|
-| **code-review** | Phase 4: Automated quality checks | `./.claude/skills/code-review/run.sh --target ai-models/` |
-| **optimize-performance** | Phase 5: Performance benchmarking | `./.claude/skills/optimize-performance/run.sh --model tcn` |
-| **update-docs** | Phase 6: Documentation sync | `./.claude/skills/update-docs/run.sh --all` |
-| **run-tests** | Phase 3: Full test suite | `./.claude/skills/run-tests/run.sh all` |
-
-See [`.claude/skills/README.md`](.claude/skills/README.md) for all 9 available skills.
-
-### Recursive Learning Loop
-
-Each development cycle improves upon the previous:
-
-```
-Cycle 1: Basic Implementation (70% quality)
-   ↓ Learn architecture patterns, identify pain points
-Cycle 2: Refined Implementation (85% quality)
-   ↓ Learn performance bottlenecks, optimization techniques
-Cycle 3: Optimized Implementation (95% quality)
-   ↓ Learn edge cases, best configurations, reusable patterns
-```
-
-**Knowledge Storage**: Use Memory MCP to save:
-- Design decisions
-- Experiment results (MLflow)
-- Best configurations
-- Solution patterns
-- Known issues
-
-### Quality Gates
-
-Every phase has quality gates to ensure excellence:
-
-**Phase 3 (Test)**:
-- [ ] All tests passing
-- [ ] Coverage >80%
-- [ ] Performance targets met (<50ms, <2W, >85%)
-
-**Phase 4 (Review)**:
-- [ ] Pylint score >8.0
-- [ ] No critical security issues
-- [ ] Architecture consistency
-
-**Phase 7 (Commit)**:
-- [ ] Semantic commit message
-- [ ] CI/CD pipeline success
-- [ ] Documentation updated
-
-### Example Workflow Execution
+### Adding a New Feature
 
 ```bash
-# Phase 1: PLAN
-# - Analyze task: "Add TCN quantization"
-# - Design approach: Post-Training Quantization (PTQ)
-# - Create todos and save design to Memory MCP
-
-# Phase 2: IMPLEMENT (TDD)
-# Write test first
-cat > tests/test_quantization.py << 'EOF'
-def test_quantized_model_size():
-    model = quantize_int8(load_model("tcn.pth"))
-    size_mb = get_model_size(model)
-    assert size_mb < 5  # Target: <5MB
+# 1. Create test (RED)
+cat > tests/test_speeding_detection.py << 'EOF'
+def test_speeding_detection_over_100kmh():
+    can_data = CANData(vehicle_speed=110.0, ...)
+    assert can_data.isSpeeding() == True
 EOF
 
-# Implement feature
-./.claude/skills/train-model/run.sh tcn --quantize int8
+pytest tests/test_speeding_detection.py -v  # FAILS
 
-# Phase 3: TEST
-./.claude/skills/run-tests/run.sh ai
+# 2. Implement (GREEN)
+# Edit: android-dtg/app/src/main/java/com/glec/dtg/models/CANData.kt
+# Add: fun isSpeeding() = vehicleSpeed > 100.0f
 
-# Phase 4: REVIEW
-./.claude/skills/code-review/run.sh --target ai-models/
+pytest tests/test_speeding_detection.py -v  # PASSES
 
-# Phase 5: IMPROVE
-./.claude/skills/optimize-performance/run.sh --model tcn
+# 3. Run full suite (VERIFY)
+pytest tests/ -v --cov
 
-# Phase 6: DOCUMENT
-./.claude/skills/update-docs/run.sh --all
+# 4. Commit (behavioral)
+git add tests/ android-dtg/
+git commit -m "feat: Add speeding detection (>100 km/h)"
 
-# Phase 7: COMMIT
-git add -A
-git commit -m "feat(tcn): Add INT8 quantization
+# 5. Refactor if needed (structural, separate commit)
+# Extract threshold constant
+git commit -m "refactor: Extract speeding threshold constant"
 
-- Reduce model size by 75% (12MB → 3MB)
-- Accuracy loss only 1.2%
-- Inference 3x faster (60ms → 20ms)
-
-Closes #42"
+# 6. Push
+git push
 ```
 
-### Integration with Tools
+### Fixing a Bug
 
-**Memory MCP** (Knowledge Base):
 ```bash
-# Save design decision
-curl -X POST http://localhost:3000/entities \
-  -d '{"name": "tcn_quantization", "observations": ["PTQ with 1000 samples optimal"]}'
+# 1. Write failing tests (both levels)
+cat > tests/test_bugfix_fuel_zero_speed.py << 'EOF'
+def test_fuel_calc_zero_speed_api():
+    # API-level: user impact
+    assert calculate_fuel(speed=0, maf=5.0) == 0.0
+
+def test_fuel_calc_zero_speed_unit():
+    # Unit-level: specific bug
+    # Previously raised ZeroDivisionError
+    with pytest.raises(ZeroDivisionError):
+        result = fuel_flow / 0  # The bug
+EOF
+
+pytest tests/test_bugfix_fuel_zero_speed.py -v  # FAILS
+
+# 2. Fix the bug
+# Add guard: if speed < 1.0: return 0.0
+
+pytest tests/test_bugfix_fuel_zero_speed.py -v  # PASSES
+
+# 3. Verify no regressions
+pytest tests/ -v
+
+# 4. Commit with issue reference
+git commit -m "fix: Prevent ZeroDivisionError in fuel calculation
+
+- Add guard clause for zero/near-zero speed
+- Return 0.0 instead of crashing
+- Add API-level and unit-level regression tests
+
+Fixes #127"
+
+# 5. Push
+git push
 ```
 
-**MLflow** (Experiment Tracking):
-```python
-with mlflow.start_run(run_name="tcn_v1.2.0"):
-    mlflow.log_param("quantization", "int8")
-    mlflow.log_metric("accuracy", 88.5)
-```
+### Refactoring Existing Code
 
-**DVC** (Data Versioning):
 ```bash
-dvc add data/training_set.csv
-dvc push
+# 1. Ensure tests exist and pass
+pytest tests/test_can_parser.py -v  # All green
+
+# 2. Refactor (structural only, no behavior change)
+# Example: Extract method, rename variables, improve structure
+
+# 3. Verify tests still pass (same behavior)
+pytest tests/test_can_parser.py -v  # Still all green
+
+# 4. Commit (structural only)
+git commit -m "refactor: Extract OBD-II PID parsing to separate class
+
+- Improve code organization
+- Better type safety with sealed classes
+- No behavior changes
+- All tests still pass"
+
+# 5. Push
+git push
 ```
-
-### Continuous Improvement Metrics
-
-Track progress over time:
-
-| Metric | Week 1 | Week 4 | Week 8 | Trend |
-|--------|--------|--------|--------|-------|
-| Coverage | 75% | 82% | 89% | ↗️ |
-| Complexity | 8.5 | 7.2 | 6.1 | ↗️ |
-| Inference Speed | 60ms | 35ms | 20ms | ↗️ |
-| Model Size | 48MB | 12MB | 3MB | ↗️ |
 
 ---
 
-## AI Model Architecture
+## 🔧 Technical Quick Reference
 
-### Model Stack
-1. **TCN (Temporal Convolutional Network)**: Fuel consumption prediction, speed pattern analysis
-   - Size: 2-4MB (INT8 quantized)
-   - Latency: 15-25ms
-   - Accuracy: 85-90%
-
-2. **LSTM-Autoencoder**: Anomaly detection for dangerous driving, CAN intrusion, sensor faults
-   - Size: 2-3MB (INT8 quantized)
-   - Latency: 25-35ms
-   - F1-Score: 0.85-0.92
-
-3. **LightGBM**: Carbon emission estimation, driving behavior classification
-   - Size: 5-10MB
-   - Latency: 5-15ms
-   - Accuracy: 90-95%
-
-**Total**: ~12MB models, 30ms parallel inference (60ms sequential)
-
-### Model Development Workflow
+### Test Execution
 
 ```bash
-# 1. Training (PyTorch)
-cd ai-models/training
-python train_tcn.py --dataset carla_synthetic --epochs 100 --batch-size 64
+# Python (AI models, utilities)
+pytest tests/ -v --cov=ai-models --cov=fleet-integration
 
-# 2. Quantization (Post-Training or QAT)
-python quantize_model.py --model tcn_fuel.pth --method ptq --calibration-samples 500
+# Android DTG
+cd android-dtg
+./gradlew testDebugUnitTest
+./gradlew connectedAndroidTest  # Requires device/emulator
 
-# 3. Export to ONNX
-python export_onnx.py --model tcn_fuel_quantized.pth --output tcn_fuel.onnx
+# Android Driver
+cd android-driver
+./gradlew testDebugUnitTest
 
-# 4. Convert to SNPE DLC (Qualcomm)
-snpe-onnx-to-dlc --input_network tcn_fuel.onnx --output_path tcn_fuel.dlc
-
-# 5. Quantize DLC for DSP/HTP
-snpe-dlc-quantize --input_dlc tcn_fuel.dlc \
-                  --input_list calibration_data.txt \
-                  --output_dlc tcn_fuel_int8.dlc
-
-# 6. Benchmark on device
-snpe-net-run --container tcn_fuel_int8.dlc --use_dsp
-
-# 7. Alternative: ONNX Runtime with QNN EP
-python run_onnx_qnn.py --model tcn_fuel.onnx --backend qnn
+# Integration tests
+python tests/e2e_test.py --duration 300
+python tests/data_validator.py --input datasets/train.csv
+python tests/benchmark_inference.py --model tcn --iterations 1000
 ```
 
-### Synthetic Data Generation
+### Performance Targets
 
-```bash
-# CARLA simulator (requires GPU: RTX 2070+, 32GB RAM)
-cd data-generation/carla-scenarios
-python generate_driving_data.py --episodes 10000 --weather random --traffic dense
-
-# Time-series augmentation
-python augment_timeseries.py --input raw_data.csv --methods jitter,scaling,timewarping --output augmented_data.csv
-
-# CAN message simulation
-candevstudio --config can_simulation.xml
-```
-
-## STM32 Firmware Development
-
-### Build & Flash
-
-```bash
-cd stm32-firmware
-
-# Build with STM32CubeIDE or command-line
-make clean && make -j$(nproc)
-
-# Flash via ST-Link
-st-flash write build/dtg_firmware.bin 0x8000000
-
-# Monitor UART output (debugging)
-screen /dev/ttyUSB0 921600
-# or
-minicom -D /dev/ttyUSB0 -b 921600
-```
+| Metric | Target | Test |
+|--------|--------|------|
+| AI Inference (P95) | <50ms | `benchmark_inference.py` |
+| Model Size | <14MB total | `pytest tests/test_*.py -k size` |
+| Test Coverage | >80% | `pytest --cov-report=html` |
+| CAN→Android Latency | <100ms | `e2e_test.py` |
+| Power Consumption | <2W avg | Snapdragon Profiler |
 
 ### CAN Message Protocol
 
-**Message Format** (STM32 → Snapdragon via UART):
+**UART Packet**: 83 bytes total
 ```
-[START(0xAA)] [ID_H] [ID_L] [DLC] [DATA(8 bytes)] [CRC16(2)] [END(0x55)]
-Total: 15 bytes per CAN frame
+[START(0xAA)] [TIMESTAMP(8)] [VEHICLE_DATA(72)] [CRC16(2)] [END(0x55)]
 ```
 
 **Key OBD-II PIDs**:
-- `0x0C`: Engine RPM = ((A*256)+B)/4
-- `0x0D`: Vehicle Speed = A (km/h)
-- `0x2F`: Fuel Level = A*100/255 (%)
-- `0x11`: Throttle Position = A*100/255 (%)
-- `0x05`: Coolant Temp = A-40 (°C)
+- `0x0C`: Engine RPM = ((A×256)+B)/4
+- `0x0D`: Vehicle Speed = A km/h
+- `0x11`: Throttle = A×100/255 %
+- `0x2F`: Fuel Level = A×100/255 %
+- `0x05`: Coolant Temp = A-40 °C
 
-**J1939 PGNs** (for commercial vehicles):
-- `61444 (F004)`: Engine speed, torque
-- `65265 (FEF1)`: Vehicle speed
-- `65262 (FEEE)`: Fuel level
-
-### Hardware Interfaces
-
-- **CAN Bus**: `can0` interface, 500kbps bitrate, MCP2551 transceiver
-- **UART**: 921600 baud, 8N1, TX/RX to Snapdragon GPIO
-- **Sensors**: I2C (IMU, GPS), SPI (external flash), ADC (analog sensors)
-
-## Android DTG Application
-
-### Build & Install
+### Build Commands (Local Environment Only)
 
 ```bash
-cd android-dtg
+# ❌ NOT available in web environment
+# These require local setup:
 
-# Debug build
-./gradlew assembleDebug
+# Android builds
+cd android-dtg && ./gradlew assembleDebug
 
-# Install to device
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+# STM32 compilation
+cd stm32-firmware && make -j$(nproc)
 
-# View logs (filter by tag)
-adb logcat -s DTGService:V AIInference:V CANReceiver:V
+# Model training (requires GPU)
+python ai-models/training/train_tcn.py --epochs 100
 
-# Release build with ProGuard
-./gradlew assembleRelease
-
-# System app installation (requires root or OEM signature)
-adb root
-adb remount
-adb push app-release.apk /system/priv-app/DTG/
-adb reboot
+# CARLA data generation (requires GPU)
+python data-generation/carla-scenarios/generate_driving_data.py
 ```
 
-### Key Components
+---
 
-1. **BootReceiver**: Auto-start on `ACTION_BOOT_COMPLETED`
-2. **DTGForegroundService**: Persistent background service (START_STICKY)
-3. **CANReceiverJNI**: Native UART reader via JNI
-4. **SNPEInferenceEngine**: AI model inference wrapper
-5. **MQTTClientService**: Fleet AI platform communication
+## 🎓 Design Patterns & Best Practices
 
-### JNI Bridge Architecture
-
-```
-Android Java/Kotlin
-    ↓ (JNI)
-Native C++ Layer
-    ├── UART Reader (select/poll, 1Hz data collection)
-    ├── CAN Message Parser (DBC file decoding)
-    └── SNPE Runtime (AI inference on DSP/HTP)
-```
-
-**Build native code**:
-```bash
-cd android-dtg/app/src/main/cpp
-mkdir build && cd build
-cmake .. -DANDROID_ABI=arm64-v8a -DANDROID_PLATFORM=android-29
-make -j$(nproc)
-```
-
-### AI Inference Integration
-
+### Thread Safety (Android)
 ```kotlin
-// Initialize SNPE runtime (once)
-val snpeEngine = SNPEEngine.getInstance(context)
-snpeEngine.loadModel("tcn_fuel_int8.dlc", SNPERuntime.DSP)
-
-// 1-minute inference scheduler
-val inferenceJob = GlobalScope.launch(Dispatchers.IO) {
-    while (isServiceRunning) {
-        val canData = collectLast60Seconds() // 60 samples at 1Hz
-
-        // Parallel inference
-        val fuelPrediction = async { snpeEngine.infer("tcn", canData) }
-        val anomalyScore = async { snpeEngine.infer("lstm_ae", canData) }
-        val behaviorClass = async { snpeEngine.infer("lightgbm", extractFeatures(canData)) }
-
-        val results = awaitAll(fuelPrediction, anomalyScore, behaviorClass)
-        processInferenceResults(results)
-
-        delay(60_000) // 1 minute
-    }
-}
-```
-
-### Power Optimization
-
-- **DVFS**: Use `PowerManager.THERMAL_STATUS_*` APIs
-- **Doze Mode**: Request battery optimization exemption
-- **Wake Locks**: PARTIAL_WAKE_LOCK only during inference
-- **Target Power**: < 2W via DSP INT8 inference
-
-## Driver Smartphone Application
-
-### Build & Install
-
-```bash
-cd android-driver
-./gradlew assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-### BLE Communication
-
-**GATT Profile** (DTG as peripheral):
-```
-Service UUID: 0000FFF0-0000-1000-8000-00805F9B34FB
-├── Characteristic (Read/Notify): Vehicle Data
-│   UUID: 0000FFF1-...
-├── Characteristic (Write): Commands
-│   UUID: 0000FFF2-...
-└── Characteristic (Read): AI Results
-    UUID: 0000FFF3-...
-```
-
-**Optimization**:
-- MTU: 517 bytes (`gatt.requestMtu(517)`)
-- Connection interval: 7.5-15ms (high-speed mode)
-- Write Without Response for telemetry
-
-### External Data Integration
-
-```kotlin
-// Weather API (Korea Meteorological Administration)
-interface WeatherApiService {
-    @GET("getUltraSrtFcst")
-    suspend fun getWeather(
-        @Query("serviceKey") key: String,
-        @Query("base_date") date: String,
-        @Query("nx") nx: Int,
-        @Query("ny") ny: Int
-    ): WeatherResponse
+// Use @Synchronized for shared state
+@Synchronized
+fun updateCANData(data: CANData) {
+    canDataBuffer.offer(data)
 }
 
-// Traffic API (Korea Transport Database)
-interface TrafficApiService {
-    @GET("api/trafficInfo")
-    suspend fun getTrafficInfo(
-        @Query("key") key: String,
-        @Query("type") type: String = "json"
-    ): TrafficResponse
+// Coroutines with proper scope
+serviceScope.launch(Dispatchers.IO) {
+    // Background work
 }
 ```
-
-### Voice Interface
-
-**Architecture**:
-```
-[Wake Word] "헤이 드라이버" (Porcupine)
-    ↓
-[Response] "네, 말씀하세요" (Google TTS)
-    ↓
-[STT Active] (Vosk Korean model, 82MB)
-    ↓
-[Intent Parsing]
-    • "배차 수락" → ACCEPT_DISPATCH
-    • "배차 거부" → REJECT_DISPATCH
-    • "긴급 상황" → EMERGENCY_ALERT
-    ↓
-[Action Execution]
-    ↓
-[Confirmation] "배차를 수락했습니다" (Google TTS)
-```
-
-**Setup**:
-```bash
-# Download Vosk Korean model
-cd android-driver/app/src/main/assets
-wget https://alphacephei.com/vosk/models/vosk-model-small-ko-0.22.zip
-unzip vosk-model-small-ko-0.22.zip
-mv vosk-model-small-ko-0.22 vosk-model-ko
-```
-
-**Porcupine Custom Wake Word**:
-1. Visit https://console.picovoice.ai/
-2. Create wake word: "헤이 드라이버"
-3. Download `.ppn` file
-4. Add to `android-driver/app/src/main/assets/wake_word.ppn`
-
-## Fleet AI Platform Integration
-
-### MQTT Configuration
-
-```kotlin
-// Eclipse Paho MQTT client
-val options = MqttConnectOptions().apply {
-    isAutomaticReconnect = true
-    isCleanSession = false
-    connectionTimeout = 30
-    keepAliveInterval = 60
-    socketFactory = getSSLSocketFactory(caCert) // TLS 1.2/1.3
-}
-
-val client = MqttAndroidClient(context, "ssl://mqtt.glec.ai:8883", clientId)
-client.connect(options)
-```
-
-### Message Protocol
-
-**Telemetry (Publish to `fleet/vehicles/{vehicle_id}/telemetry`)**:
-```json
-{
-  "vehicle_id": "GLEC-DTG-001",
-  "timestamp": 1699564800000,
-  "location": {"lat": 37.5665, "lon": 126.9780, "speed": 80.5, "heading": 45.2},
-  "diagnostics": {"engine_rpm": 2500, "fuel_level": 75.3, "battery_voltage": 12.6},
-  "ai_results": {
-    "fuel_efficiency": 12.5,
-    "safety_score": 85,
-    "carbon_emission": 120.3,
-    "anomalies": ["harsh_braking"]
-  }
-}
-```
-
-**Commands (Subscribe to `fleet/vehicles/{vehicle_id}/commands`)**:
-```json
-{
-  "command": "ASSIGN_DISPATCH",
-  "dispatch_id": "D123456",
-  "destination": {"lat": 37.5012, "lon": 127.0396},
-  "cargo_weight": 5000,
-  "deadline": 1699568400000
-}
-```
-
-### Offline Queuing
-
-```kotlin
-// SQLite-based message buffer
-class MqttMessageBuffer(context: Context) {
-    fun enqueue(topic: String, payload: ByteArray, qos: Int) {
-        db.insert("mqtt_queue", null, ContentValues().apply {
-            put("topic", topic)
-            put("payload", Base64.encodeToString(payload, Base64.DEFAULT))
-            put("qos", qos)
-            put("timestamp", System.currentTimeMillis())
-        })
-    }
-
-    fun dequeueAll(): List<QueuedMessage> {
-        // Return pending messages when connection restored
-    }
-}
-```
-
-**QoS Levels**:
-- QoS 0: Telemetry (occasional loss acceptable)
-- QoS 1: Vehicle data, AI results (recommended)
-- QoS 2: Critical commands, safety alerts
-
-### Compression
-
-```kotlin
-// Gzip compression (60-80% reduction for JSON)
-fun compressPayload(json: String): ByteArray {
-    val bos = ByteArrayOutputStream()
-    GZIPOutputStream(bos).use { it.write(json.toByteArray(Charsets.UTF_8)) }
-    return bos.toByteArray()
-}
-```
-
-## Testing & Validation
-
-### Unit Tests
-
-```bash
-# AI models (accuracy, latency)
-cd ai-models
-pytest tests/ -v --cov=training --cov=optimization
-
-# Android DTG app
-cd android-dtg
-./gradlew testDebugUnitTest
-
-# STM32 firmware (requires hardware-in-the-loop)
-cd stm32-firmware
-make test
-```
-
-### Integration Tests
-
-```bash
-# CAN bus simulation
-candump can0 &
-cangen can0 -I 0x123 -L 8 -D r -g 1000  # Generate random CAN frames
-
-# End-to-end vehicle data flow
-python tests/e2e_test.py --duration 300  # 5 minutes
-
-# AI inference benchmark
-cd android-dtg
-./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.glec.dtg.InferenceLatencyTest
-```
-
-### Performance Validation
-
-**Targets**:
-- CAN → STM32 → UART → Android: < 100ms total latency
-- AI inference: < 50ms (parallel), < 2W power
-- MQTT round-trip: < 500ms (LTE)
-- Voice command: < 2s total (wake word → action → confirmation)
-
-**Profiling**:
-```bash
-# Snapdragon Profiler (power, CPU, GPU, DSP usage)
-# Download from: https://developer.qualcomm.com/software/snapdragon-profiler
-
-# Android Profiler (memory, CPU, network)
-# Built into Android Studio
-```
-
-## CI/CD Pipeline
-
-### GitHub Actions
-
-```bash
-# Trigger on push
-.github/workflows/android-build.yml  # Build both Android apps
-.github/workflows/stm32-build.yml    # Cross-compile STM32 firmware
-.github/workflows/model-validation.yml  # Validate model accuracy/size
-```
-
-### Deployment
-
-```bash
-# OTA update package (Android)
-cd android-dtg
-./gradlew assembleRelease
-python scripts/generate_ota_package.py \
-    --input app/build/outputs/apk/release/app-release.apk \
-    --output ota_update_v1.2.0.zip
-
-# Upload to Fleet AI platform
-curl -X POST https://api.glec.ai/ota/upload \
-    -H "Authorization: Bearer $API_TOKEN" \
-    -F "file=@ota_update_v1.2.0.zip" \
-    -F "version=1.2.0" \
-    -F "target_devices=dtg_snapdragon_865"
-```
-
-## Development Environment Setup
-
-### Prerequisites
-
-```bash
-# Android Studio Hedgehog | 2023.1.1+
-# Download from: https://developer.android.com/studio
-
-# Android NDK 26.1.10909125
-# Install via SDK Manager → SDK Tools → NDK (side by side)
-
-# Python 3.9 or 3.10
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-
-# Qualcomm SNPE SDK
-# Download from: https://softwarecenter.qualcomm.com (requires account)
-# Extract to: ~/snpe-sdk/
-
-# STM32CubeIDE (for firmware)
-# Download from: https://www.st.com/en/development-tools/stm32cubeide.html
-
-# ARM GCC Toolchain (cross-compilation)
-sudo apt install gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
-```
-
-### Environment Variables
-
-```bash
-export SNPE_ROOT=~/snpe-sdk
-export PATH=$SNPE_ROOT/bin:$PATH
-export LD_LIBRARY_PATH=$SNPE_ROOT/lib/aarch64-android:$LD_LIBRARY_PATH
-export ANDROID_HOME=~/Android/Sdk
-export ANDROID_NDK_HOME=$ANDROID_HOME/ndk/26.1.10909125
-```
-
-## Critical Design Patterns
-
-### Thread Safety (Android Services)
-- Use `@Synchronized` for shared CAN data buffers
-- Executor services for background tasks: `Executors.newScheduledThreadPool()`
-- Coroutines with proper scope: `serviceScope.launch(Dispatchers.IO)`
 
 ### Memory Management (JNI)
-- Always release native resources: `DeleteLocalRef()`, `ReleaseByteArrayElements()`
-- Use `weak_ptr` for circular references in C++
-- Monitor native heap: `adb shell dumpsys meminfo <package>`
+```cpp
+// Always release JNI references
+env->DeleteLocalRef(byteArray);
+env->ReleaseByteArrayElements(array, elements, 0);
+```
 
-### CAN Message Parsing
-- Use DBC file parsers: `cantools` (Python) or `dbcppp` (C++)
-- Validate CRC checksums before processing
-- Handle big-endian/little-endian conversions
+### CAN Message Validation
+```python
+def validate_can_data(data: CANData) -> bool:
+    """Validate CAN data ranges before processing"""
+    return (
+        0 <= data.vehicle_speed <= 255 and
+        0 <= data.engine_rpm <= 16383 and
+        0 <= data.throttle_position <= 100 and
+        -40 <= data.coolant_temp <= 215
+    )
+```
 
-### Model Versioning
-- Semantic versioning: `tcn_fuel_v1.2.3_int8.dlc`
-- DVC for dataset tracking: `dvc add data/training_set.csv`
-- MLflow for experiment tracking: `mlflow.log_model(model, "tcn_fuel")`
+---
 
-## Security Considerations
+## 🔒 Security Checklist
 
-- **TLS Certificates**: Pin CA certificate for MQTT (prevent MITM)
-- **API Keys**: Store in Android Keystore, never hardcode
-- **CAN Bus**: Implement message authentication (HMAC) for safety-critical commands
-- **OTA Updates**: Verify signature before applying (Android Verified Boot)
+Before committing code that handles:
 
-## Known Hardware Limitations
+**Sensitive Data**:
+- [ ] No hardcoded API keys (use Android Keystore)
+- [ ] TLS certificate pinning for MQTT
+- [ ] Input validation for all external data
 
-- **Snapdragon 865 DSP**: Does not support all ONNX ops (e.g., Squeeze-Excitation, Swish activation)
-  - **Workaround**: Use RELU6, avoid unsupported layers, test with `snpe-dlc-info`
-- **STM32 UART Buffer**: Limited to 256 bytes
-  - **Workaround**: Implement circular buffer, send in chunks
-- **Android Doze Mode**: May kill service on some OEMs (Xiaomi, Huawei)
-  - **Workaround**: Request battery optimization exemption, use system app installation
+**CAN Bus**:
+- [ ] CRC validation for all messages
+- [ ] Message authentication for critical commands
+- [ ] Rate limiting for CAN transmissions
 
-## Support Resources
+**OTA Updates**:
+- [ ] Signature verification before applying
+- [ ] Rollback mechanism on failure
+- [ ] Secure channel (HTTPS/MQTT-TLS)
 
-- SNPE Documentation: https://developer.qualcomm.com/docs/snpe/
-- CARLA Documentation: https://carla.readthedocs.io/
-- Vosk API: https://alphacephei.com/vosk/
-- Eclipse Paho MQTT: https://github.com/eclipse-paho/paho.mqtt.android
-- STM32 CAN Examples: https://github.com/timsonater/stm32-CAN-bus-example-HAL-API
+---
+
+## 📖 Additional Resources
+
+**Phase-Specific Guides**:
+- `docs/GPU_REQUIRED_TASKS.md` - Phase 2 local tasks (CARLA, training, quantization)
+- `docs/PHASE3_TESTING.md` - Comprehensive testing strategy
+- `docs/RECURSIVE_WORKFLOW.md` - Detailed workflow methodology
+- `docs/PHASE2_IMPLEMENTATION.md` - Phase 2 completion summary
+
+**External Documentation**:
+- SNPE: https://developer.qualcomm.com/docs/snpe/
+- CARLA: https://carla.readthedocs.io/
+- Vosk: https://alphacephei.com/vosk/
+- Eclipse Paho: https://github.com/eclipse-paho/paho.mqtt.android
+
+**Custom Skills** (Workflow Automation):
+- `./.claude/skills/run-tests/` - Full test suite execution
+- `./.claude/skills/code-review/` - Automated quality checks
+- `./.claude/skills/optimize-performance/` - Performance benchmarking
+
+---
+
+## ✅ Summary Checklist
+
+Every time you work on this codebase:
+
+1. [ ] Check phase requirements (GPU_REQUIRED_TASKS.md / PHASE3_TESTING.md)
+2. [ ] Verify task is web-compatible (no GPU/build/hardware required)
+3. [ ] Write test FIRST (🔴 RED)
+4. [ ] Implement minimal code (🟢 GREEN)
+5. [ ] Verify no regressions (full test suite)
+6. [ ] Refactor if needed (🔵 REFACTOR, separate commit)
+7. [ ] Never mix structural and behavioral changes
+8. [ ] Use semantic commit messages
+9. [ ] Push to feature branch
+10. [ ] Update todos, repeat
+
+**Remember**: Test-driven, incremental, separated concerns, always improving.
