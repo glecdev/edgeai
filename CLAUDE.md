@@ -53,6 +53,158 @@ edgeai/
 └── docs/                   # Architecture, API documentation
 ```
 
+---
+
+## 🔄 Recursive Improvement Workflow System
+
+### Core Philosophy: Plan → Implement → Test → Review → Improve → Document → Commit
+
+This project follows a **world-class recursive improvement workflow** designed for continuous quality enhancement and knowledge accumulation.
+
+**Full Documentation**: See [`docs/RECURSIVE_WORKFLOW.md`](docs/RECURSIVE_WORKFLOW.md) for complete details.
+
+### Quick Workflow Guide
+
+#### 7-Phase Development Cycle
+
+```
+1️⃣ PLAN      → Design architecture, create todos, Memory MCP
+2️⃣ IMPLEMENT → TDD, Skills automation, incremental commits
+3️⃣ TEST      → Unit (>80%), Integration, Performance benchmarks
+4️⃣ REVIEW    → Code quality, security, architecture (use code-review skill)
+5️⃣ IMPROVE   → Optimize performance, refactor, extract patterns
+6️⃣ DOCUMENT  → API docs, diagrams, CLAUDE.md sync
+7️⃣ COMMIT    → Semantic commits, tags, changelog, CI/CD
+```
+
+#### Custom Skills for Workflow Automation
+
+| Skill | Purpose | Usage |
+|-------|---------|-------|
+| **code-review** | Phase 4: Automated quality checks | `./.claude/skills/code-review/run.sh --target ai-models/` |
+| **optimize-performance** | Phase 5: Performance benchmarking | `./.claude/skills/optimize-performance/run.sh --model tcn` |
+| **update-docs** | Phase 6: Documentation sync | `./.claude/skills/update-docs/run.sh --all` |
+| **run-tests** | Phase 3: Full test suite | `./.claude/skills/run-tests/run.sh all` |
+
+See [`.claude/skills/README.md`](.claude/skills/README.md) for all 9 available skills.
+
+### Recursive Learning Loop
+
+Each development cycle improves upon the previous:
+
+```
+Cycle 1: Basic Implementation (70% quality)
+   ↓ Learn architecture patterns, identify pain points
+Cycle 2: Refined Implementation (85% quality)
+   ↓ Learn performance bottlenecks, optimization techniques
+Cycle 3: Optimized Implementation (95% quality)
+   ↓ Learn edge cases, best configurations, reusable patterns
+```
+
+**Knowledge Storage**: Use Memory MCP to save:
+- Design decisions
+- Experiment results (MLflow)
+- Best configurations
+- Solution patterns
+- Known issues
+
+### Quality Gates
+
+Every phase has quality gates to ensure excellence:
+
+**Phase 3 (Test)**:
+- [ ] All tests passing
+- [ ] Coverage >80%
+- [ ] Performance targets met (<50ms, <2W, >85%)
+
+**Phase 4 (Review)**:
+- [ ] Pylint score >8.0
+- [ ] No critical security issues
+- [ ] Architecture consistency
+
+**Phase 7 (Commit)**:
+- [ ] Semantic commit message
+- [ ] CI/CD pipeline success
+- [ ] Documentation updated
+
+### Example Workflow Execution
+
+```bash
+# Phase 1: PLAN
+# - Analyze task: "Add TCN quantization"
+# - Design approach: Post-Training Quantization (PTQ)
+# - Create todos and save design to Memory MCP
+
+# Phase 2: IMPLEMENT (TDD)
+# Write test first
+cat > tests/test_quantization.py << 'EOF'
+def test_quantized_model_size():
+    model = quantize_int8(load_model("tcn.pth"))
+    size_mb = get_model_size(model)
+    assert size_mb < 5  # Target: <5MB
+EOF
+
+# Implement feature
+./.claude/skills/train-model/run.sh tcn --quantize int8
+
+# Phase 3: TEST
+./.claude/skills/run-tests/run.sh ai
+
+# Phase 4: REVIEW
+./.claude/skills/code-review/run.sh --target ai-models/
+
+# Phase 5: IMPROVE
+./.claude/skills/optimize-performance/run.sh --model tcn
+
+# Phase 6: DOCUMENT
+./.claude/skills/update-docs/run.sh --all
+
+# Phase 7: COMMIT
+git add -A
+git commit -m "feat(tcn): Add INT8 quantization
+
+- Reduce model size by 75% (12MB → 3MB)
+- Accuracy loss only 1.2%
+- Inference 3x faster (60ms → 20ms)
+
+Closes #42"
+```
+
+### Integration with Tools
+
+**Memory MCP** (Knowledge Base):
+```bash
+# Save design decision
+curl -X POST http://localhost:3000/entities \
+  -d '{"name": "tcn_quantization", "observations": ["PTQ with 1000 samples optimal"]}'
+```
+
+**MLflow** (Experiment Tracking):
+```python
+with mlflow.start_run(run_name="tcn_v1.2.0"):
+    mlflow.log_param("quantization", "int8")
+    mlflow.log_metric("accuracy", 88.5)
+```
+
+**DVC** (Data Versioning):
+```bash
+dvc add data/training_set.csv
+dvc push
+```
+
+### Continuous Improvement Metrics
+
+Track progress over time:
+
+| Metric | Week 1 | Week 4 | Week 8 | Trend |
+|--------|--------|--------|--------|-------|
+| Coverage | 75% | 82% | 89% | ↗️ |
+| Complexity | 8.5 | 7.2 | 6.1 | ↗️ |
+| Inference Speed | 60ms | 35ms | 20ms | ↗️ |
+| Model Size | 48MB | 12MB | 3MB | ↗️ |
+
+---
+
 ## AI Model Architecture
 
 ### Model Stack
