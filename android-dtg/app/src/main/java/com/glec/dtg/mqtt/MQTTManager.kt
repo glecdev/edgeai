@@ -160,8 +160,23 @@ class MQTTManager(
                     password = config.password.toCharArray()
                 }
 
-                // TODO: Add TLS/SSL configuration
-                // socketFactory = createSSLSocketFactory()
+                // TLS/SSL configuration
+                if (config.isTLSEnabled() && config.tlsConfig != null) {
+                    try {
+                        Log.i(TAG, "Configuring TLS (version: ${config.tlsConfig.tlsVersion}, " +
+                                "mTLS: ${config.tlsConfig.isMutualTLS()}, " +
+                                "pinning: ${config.tlsConfig.isCertificatePinningEnabled()})")
+
+                        // Build SSL socket factory
+                        val sslSocketFactory = SSLSocketFactoryBuilder.build(config.tlsConfig)
+                        socketFactory = sslSocketFactory
+
+                        Log.i(TAG, "✅ TLS configured successfully")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "❌ Failed to configure TLS", e)
+                        throw e
+                    }
+                }
             }
 
             // Connect

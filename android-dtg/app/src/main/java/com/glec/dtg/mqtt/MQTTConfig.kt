@@ -11,7 +11,8 @@ package com.glec.dtg.mqtt
  *     brokerUrl = "ssl://mqtt.fleet.glec.co.kr:8883",
  *     clientId = "DTG-SN-12345",
  *     username = "dtg-device-12345",
- *     password = "secure-password"
+ *     password = "secure-password",
+ *     tlsConfig = TLSConfig.createServerAuth(caCertInputStream)
  * )
  * ```
  *
@@ -26,6 +27,7 @@ package com.glec.dtg.mqtt
  * @property maxReconnectDelay Maximum reconnection delay in milliseconds
  * @property queueMaxSize Maximum offline queue size
  * @property queueTTLHours Message TTL in hours
+ * @property tlsConfig TLS/SSL configuration (required if brokerUrl uses ssl://)
  */
 data class MQTTConfig(
     val brokerUrl: String,
@@ -38,7 +40,8 @@ data class MQTTConfig(
     val autoReconnect: Boolean = true,
     val maxReconnectDelay: Long = 60_000L,
     val queueMaxSize: Int = 10_000,
-    val queueTTLHours: Long = 24
+    val queueTTLHours: Long = 24,
+    val tlsConfig: TLSConfig? = null
 ) {
     companion object {
         /**
@@ -78,6 +81,16 @@ data class MQTTConfig(
         if (keepAliveInterval <= 0) return false
         if (queueMaxSize <= 0) return false
         if (queueTTLHours <= 0) return false
+
+        // TLS validation: if ssl://, tlsConfig must be provided and valid
+        if (isTLSEnabled()) {
+            if (tlsConfig == null) {
+                return false
+            }
+            if (!tlsConfig.validate()) {
+                return false
+            }
+        }
 
         return true
     }

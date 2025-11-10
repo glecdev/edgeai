@@ -475,7 +475,7 @@ git commit -m "feat: Add new feature with tests"
 - 🚀 **Ready for testing**: Requires MQTT broker for integration tests
 - 📖 **See**: [docs/MQTT_ARCHITECTURE.md](docs/MQTT_ARCHITECTURE.md)
 
-**Phase 3C: SQLite Offline Queue** → ✅ **100% COMPLETE** 🎉 **NEW**
+**Phase 3C: SQLite Offline Queue** → ✅ **100% COMPLETE** 🎉
 - ✅ **SQLite Database Implementation**: 165 lines persistent storage
   - `OfflineQueueDatabaseHelper.kt` - Database schema and helper
   - ACID transactions for data integrity
@@ -500,6 +500,37 @@ git commit -m "feat: Add new feature with tests"
 - 📊 **Metrics**: 535 lines of production code, 530 lines of tests
 - 🎯 **Benefits**: Persistent storage, ACID transactions, scalable (10K+ messages), automatic cleanup
 - 📖 **See**: [docs/MQTT_ARCHITECTURE.md](docs/MQTT_ARCHITECTURE.md#implementation-details)
+
+**Phase 3D: TLS/SSL Security** → ✅ **100% COMPLETE** 🎉 **NEW**
+- ✅ **TLS Configuration**: 160 lines secure connection setup
+  - `TLSConfig.kt` - TLS/SSL configuration data class
+  - TLS 1.2+ enforcement (no SSLv3, TLSv1.0, TLSv1.1)
+  - Recommended cipher suites (ECDHE, AES-GCM, SHA256/384)
+  - Mutual TLS (mTLS) support with client certificates
+  - Server authentication and mutual authentication modes
+- ✅ **SSL Socket Factory**: 190 lines certificate handling
+  - `SSLSocketFactoryBuilder.kt` - SSL socket factory builder
+  - CA certificate loading and validation
+  - Client certificate + private key loading (PEM format)
+  - TrustManager and KeyManager creation
+  - Cipher suite enforcement wrapper
+- ✅ **Certificate Pinning**: 180 lines additional security layer
+  - `CertificatePinner.kt` - SHA-256 certificate pinning
+  - Pin calculation from public keys
+  - Multi-pin support (primary + backup pins)
+  - Hostname-based pin validation
+  - PinningTrustManager wrapper
+- ✅ **MQTT Integration**: TLS applied to MQTT connections
+  - MQTTConfig updated with tlsConfig field
+  - MQTTManager auto-configures TLS for ssl:// URLs
+  - Validation enforces TLS config for ssl:// brokers
+- ✅ **Test Coverage**: 19/19 tests passing
+  - `tests/test_mqtt_tls_config.py` - Python-based validation
+  - TLS config validation, mutual TLS, certificate pinning
+  - Pin format validation, MQTT config integration
+- 📊 **Metrics**: 530 lines of production code, 410 lines of tests
+- 🔒 **Security**: TLS 1.2+, cipher suite selection, certificate pinning, mTLS
+- 📖 **See**: [docs/MQTT_ARCHITECTURE.md](docs/MQTT_ARCHITECTURE.md#security)
 
 **Phase 2: Implementation** → ✅ **100% Complete**
 - 8,500+ lines of production code
@@ -547,13 +578,21 @@ pytest ai-models/tests/test_tcn.py -v
 pytest ai-models/tests/test_lstm_ae.py -v
 pytest ai-models/tests/test_lightgbm.py -v
 
-# Phase 1.5 Integration tests (24 tests) 🎉 **NEW** **PRODUCTION READY**
+# Phase 1.5 Integration tests (24 tests) ✅ **PRODUCTION READY**
 pytest tests/test_feature_extraction_accuracy.py -v          # 14 tests
 pytest tests/test_edge_ai_inference_integration.py -v        # 10 tests
 # Results:
 #   - Feature Extraction: Python ↔ Kotlin cross-platform validation
 #   - ONNX Inference: End-to-end pipeline validation
 #   - Performance: P95 latency 0.032ms (1562x faster than 50ms target)
+
+# Phase 3 MQTT Fleet Integration tests (31 tests) 🎉 **NEW** **PRODUCTION READY**
+python tests/test_mqtt_offline_queue.py                     # 12 tests
+python tests/test_mqtt_tls_config.py                        # 19 tests
+# Results:
+#   - SQLite Queue: FIFO ordering, TTL expiration, retry management
+#   - TLS/SSL: Configuration validation, certificate pinning, mTLS
+#   - Security: TLS 1.2+ enforcement, cipher suite validation
 
 # Phase 1 Android tests (Kotlin/JUnit) - Requires local Android SDK
 cd android-dtg

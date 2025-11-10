@@ -718,6 +718,89 @@ pytest tests/test_mqtt_offline_queue.py -v
 
 **Test Results**: ✅ 12/12 tests passing
 
+### TLS/SSL Security Implementation
+
+**Locations**:
+- `android-dtg/app/src/main/java/com/glec/dtg/mqtt/TLSConfig.kt`
+- `android-dtg/app/src/main/java/com/glec/dtg/mqtt/SSLSocketFactoryBuilder.kt`
+- `android-dtg/app/src/main/java/com/glec/dtg/mqtt/CertificatePinner.kt`
+
+Production-grade TLS/SSL security for MQTT connections.
+
+**TLSConfig.kt** (160 lines):
+```kotlin
+// Server authentication only
+val tlsConfig = TLSConfig.createServerAuth(
+    caCertInputStream = assets.open("mqtt_ca.crt"),
+    tlsVersion = "TLSv1.2",
+    certificatePins = listOf("sha256/AAAA...=")
+)
+
+// Mutual TLS (mTLS)
+val tlsConfig = TLSConfig.createMutualTLS(
+    caCertInputStream = assets.open("mqtt_ca.crt"),
+    clientCertInputStream = assets.open("client.crt"),
+    clientKeyInputStream = assets.open("client.key"),
+    tlsVersion = "TLSv1.2"
+)
+```
+
+**Features**:
+- TLS 1.2+ enforcement (no SSLv3/TLSv1.0/TLSv1.1)
+- Recommended cipher suites (ECDHE, AES-GCM, SHA256/384)
+- Mutual TLS (mTLS) support
+- Certificate pinning configuration
+- Hostname verification
+
+**SSLSocketFactoryBuilder.kt** (190 lines):
+```kotlin
+val socketFactory = SSLSocketFactoryBuilder.build(tlsConfig)
+mqttOptions.socketFactory = socketFactory
+```
+
+**Features**:
+- CA certificate loading (X.509)
+- Client certificate + private key (PEM format)
+- TrustManager/KeyManager creation
+- Cipher suite enforcement
+- Exception handling
+
+**CertificatePinner.kt** (180 lines):
+```kotlin
+val pinner = CertificatePinner(
+    hostname = "mqtt.fleet.glec.co.kr",
+    pins = listOf(
+        "sha256/AAAA...=",  // Primary
+        "sha256/BBBB...="   // Backup
+    )
+)
+```
+
+**Features**:
+- SHA-256 public key pinning
+- Multi-pin support
+- Hostname validation
+- PinningTrustManager wrapper
+- MITM attack prevention
+
+**MQTT Integration**:
+```kotlin
+val mqttConfig = MQTTConfig(
+    brokerUrl = "ssl://mqtt.fleet.glec.co.kr:8883",
+    clientId = "DTG-SN-12345",
+    tlsConfig = TLSConfig.createServerAuth(...)
+)
+
+mqttManager.connect()  // TLS auto-configured
+```
+
+**Test Suite**: `tests/test_mqtt_tls_config.py` (19/19 tests passing)
+- TLS config validation
+- Mutual TLS validation
+- Certificate pinning
+- Pin format validation
+- MQTT config integration
+
 ---
 
 ## See Also
@@ -729,5 +812,5 @@ pytest tests/test_mqtt_offline_queue.py -v
 ---
 
 **Last Updated**: 2025-01-10
-**Version**: 1.1.0 (SQLite Queue Implementation)
+**Version**: 1.2.0 (TLS/SSL Security Implementation)
 **Author**: GLEC DTG Team
