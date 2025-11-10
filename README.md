@@ -456,7 +456,7 @@ git commit -m "feat: Add new feature with tests"
 - ✅ **Quality Assurance**: Cross-platform validation, production-ready quality
 - 📖 **See**: [docs/PHASE1_DEPLOYMENT_GUIDE.md](docs/PHASE1_DEPLOYMENT_GUIDE.md)
 
-**Phase 3B: MQTT Fleet Integration** → ✅ **100% COMPLETE** 🎉 **NEW**
+**Phase 3B: MQTT Fleet Integration** → ✅ **100% COMPLETE** 🎉
 - ✅ **MQTT Architecture Design**: Production-grade design document (515 lines)
   - Topic structure (telemetry, inference, alerts, status)
   - QoS levels (0: fire-forget, 1: at-least-once, 2: exactly-once)
@@ -474,6 +474,32 @@ git commit -m "feat: Add new feature with tests"
   - Placeholder removed (18 lines), production code added (65 lines)
 - 🚀 **Ready for testing**: Requires MQTT broker for integration tests
 - 📖 **See**: [docs/MQTT_ARCHITECTURE.md](docs/MQTT_ARCHITECTURE.md)
+
+**Phase 3C: SQLite Offline Queue** → ✅ **100% COMPLETE** 🎉 **NEW**
+- ✅ **SQLite Database Implementation**: 165 lines persistent storage
+  - `OfflineQueueDatabaseHelper.kt` - Database schema and helper
+  - ACID transactions for data integrity
+  - Indexed queries (timestamp, TTL) for performance
+  - Database statistics and management
+- ✅ **Queue Manager Implementation**: 370 lines queue operations
+  - `OfflineQueueManager.kt` - High-level queue API
+  - FIFO ordering (by timestamp)
+  - TTL-based expiration (24 hours default)
+  - Retry count management (max 3 retries)
+  - Periodic cleanup (every 5 minutes)
+  - Thread-safe operations
+- ✅ **MQTTManager Integration**: Migrated from in-memory to SQLite
+  - Persistent message storage (survives app restarts)
+  - Queue operations: enqueue(), dequeueAll(), delete(), incrementRetryCount()
+  - Automatic queue size management (max 10,000 messages)
+  - Smart flush on reconnect with retry logic
+- ✅ **Test Coverage**: 12/12 tests passing
+  - `tests/test_mqtt_offline_queue.py` - Python-based validation
+  - Basic operations, FIFO ordering, TTL expiration, retry limits, QoS handling
+  - Cross-platform validation of SQLite queue logic
+- 📊 **Metrics**: 535 lines of production code, 530 lines of tests
+- 🎯 **Benefits**: Persistent storage, ACID transactions, scalable (10K+ messages), automatic cleanup
+- 📖 **See**: [docs/MQTT_ARCHITECTURE.md](docs/MQTT_ARCHITECTURE.md#implementation-details)
 
 **Phase 2: Implementation** → ✅ **100% Complete**
 - 8,500+ lines of production code

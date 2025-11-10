@@ -82,9 +82,12 @@ class MQTTManager(
     private val isConnecting = AtomicBoolean(false)
     private val isDisconnecting = AtomicBoolean(false)
 
-    // Offline queue (will be implemented with SQLite)
-    // For now, use in-memory queue
-    private val offlineQueue = mutableListOf<QueuedMessage>()
+    // Offline queue (SQLite-based persistent storage)
+    private val offlineQueueManager = OfflineQueueManager(
+        context = context,
+        maxQueueSize = config.queueMaxSize,
+        ttlHours = config.queueTTLHours
+    )
 
     /**
      * Set connection callback
@@ -330,7 +333,7 @@ class MQTTManager(
             isConnected = isConnected(),
             messagesSent = messagesSent.get(),
             messagesFailed = messagesFailed.get(),
-            messagesQueued = offlineQueue.size,
+            messagesQueued = offlineQueueManager.getQueueSize(),
             reconnectCount = reconnectCount.toInt(),
             lastConnectTime = lastConnectTime,
             lastDisconnectTime = lastDisconnectTime
@@ -424,40 +427,52 @@ class MQTTManager(
     }
 
     private fun queueMessage(topic: String, payload: String, qos: Int) {
-        if (offlineQueue.size >= config.queueMaxSize) {
-            Log.w(TAG, "Offline queue full, removing oldest message")
-            offlineQueue.removeAt(0)
-        }
+        val ttlMillis = config.queueTTLHours * 60 * 60 * 1000
 
-        val ttl = System.currentTimeMillis() + (config.queueTTLHours * 60 * 60 * 1000)
-        val message = QueuedMessage(
+        val messageId = offlineQueueManager.enqueue(
             topic = topic,
             payload = payload,
             qos = qos,
-            ttl = ttl
+            ttlMillis = ttlMillis
         )
 
-        offlineQueue.add(message)
-        Log.d(TAG, "Message queued (queue size: ${offlineQueue.size})")
+        if (messageId != -1L) {
+            Log.d(TAG, "Message queued (id=$messageId, queue size: ${offlineQueueManager.getQueueSize()})")
+        } else {
+            Log.e(TAG, "Failed to queue message")
+        }
     }
 
     private fun flushOfflineQueue() {
-        if (offlineQueue.isEmpty()) {
+        val queueSize = offlineQueueManager.getQueueSize()
+        if (queueSize == 0) {
             return
         }
 
-        Log.i(TAG, "Flushing offline queue (${offlineQueue.size} messages)")
+        Log.i(TAG, "Flushing offline queue ($queueSize messages)")
 
-        val iterator = offlineQueue.iterator()
+        // Cleanup expired messages first
+        val expiredCount = offlineQueueManager.cleanupExpired()
+        if (expiredCount > 0) {
+            Log.d(TAG, "Removed $expiredCount expired messages")
+        }
+
+        // Dequeue all messages (FIFO order)
+        val messages = offlineQueueManager.dequeueAll()
         var flushedCount = 0
+        var failedCount = 0
 
-        while (iterator.hasNext()) {
-            val message = iterator.next()
-
-            // Remove expired messages
+        for (message in messages) {
+            // Skip if already expired (shouldn't happen after cleanup, but safety check)
             if (message.isExpired()) {
-                Log.d(TAG, "Removing expired message")
-                iterator.remove()
+                offlineQueueManager.delete(message.id)
+                continue
+            }
+
+            // Check retry limit
+            if (!message.canRetry()) {
+                Log.w(TAG, "Message exceeded max retries (id=${message.id})")
+                offlineQueueManager.delete(message.id)
                 continue
             }
 
@@ -465,15 +480,19 @@ class MQTTManager(
             val success = publish(message.topic, message.payload, message.qos)
 
             if (success) {
-                iterator.remove()
+                // Delete from queue on successful publish
+                offlineQueueManager.delete(message.id)
                 flushedCount++
             } else {
+                // Increment retry count on failure
+                offlineQueueManager.incrementRetryCount(message.id)
+                failedCount++
                 // Stop flushing if publish fails
                 break
             }
         }
 
-        Log.i(TAG, "Flushed $flushedCount messages from offline queue")
+        Log.i(TAG, "Flushed $flushedCount messages from offline queue ($failedCount failed)")
     }
 
     private fun cleanup() {
@@ -489,5 +508,6 @@ class MQTTManager(
         disconnect()
         reconnectJob?.cancel()
         scope.cancel()
+        offlineQueueManager.release()
     }
 }
