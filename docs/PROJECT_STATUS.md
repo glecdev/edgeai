@@ -3,7 +3,7 @@
 **Generated**: 2025-01-10
 **Branch**: `claude/artifact-701ca010-011CUxNEi8V3zxgnuGp9E8Ss`
 **Workflow**: Red-Green-Refactor TDD (Kent Beck methodology)
-**Latest Milestones**: Phase 3-F (Multi-Model AI), Phase 3-G (Test Infrastructure) ✅
+**Latest Milestones**: Phase 3-G (Test Infrastructure), Phase 3-I (SDK Architecture Design) ✅
 
 ---
 
@@ -13,11 +13,12 @@
 |-------|--------|------------|-------|
 | Phase 1: Planning & Design | ✅ Complete | 100% | Architecture defined, requirements documented |
 | Phase 2: Implementation | ✅ Complete | 100% | All web-executable code implemented (8,500+ lines) |
-| **Phase 3: Integration & Testing** | 🟢 **Nearly Complete** | **85%** | **Production-grade integration complete, 144/144 tests passing** |
+| **Phase 3: Integration & Testing** | 🟢 **Nearly Complete** | **90%** | **Production-grade integration complete, 144/144 tests passing** |
 | ├─ Phase 3-A: High-Value Integration | ✅ **Complete** | **100%** | **Realtime, Physics, J1939, 3D UI, Model Mgmt, Voice** |
 | ├─ Phase 3-F: Multi-Model AI | ✅ **Complete** | **100%** | **3 models integrated (LightGBM production + TCN/LSTM-AE stubs)** |
 | ├─ Phase 3-G: Test Infrastructure | ✅ **Complete** | **100%** | **6 quality scripts, 100% test pass rate (144 tests)** |
 | ├─ Phase 3-H: Dashcam Video Integration | 📋 **Planning** | **20%** | **Feasibility analysis complete, conditionally feasible** |
+| ├─ Phase 3-I: SDK Architecture Design | ✅ **Complete** | **100%** | **Multi-sensor hub SDK architecture (1,800+ lines)** |
 | ├─ Phase 3-B: Voice UI Panel | ⏸️ Pending | 0% | Voice command UI feedback (hardware-dependent) |
 | ├─ Phase 3-C: Hybrid AI | ⏸️ Pending | 0% | Vertex AI Gemini integration (API keys required) |
 | └─ Phase 3-D: Integration Tests | ⏸️ Pending | 0% | Hardware E2E testing (requires physical devices) |
@@ -952,6 +953,387 @@ class DTGForegroundService : Service() {
 
 ---
 
+## 📐 Phase 3-I: SDK Architecture Design (NEW!)
+
+### Summary
+- **Task**: Design comprehensive EdgeAI SDK architecture for multi-sensor hub
+- **Status**: ✅ **Architecture Design Complete** (100%)
+- **Deliverable**: `docs/EDGEAI_SDK_ARCHITECTURE.md` (1,800+ lines)
+- **Completion Date**: 2025-01-10
+
+### Background
+
+**User Requirements Clarification** (Critical Architecture Change):
+The user clarified that the DTG system must:
+1. Be packaged as **Android SDK (AAR)** → Android App → **Launcher App**
+2. Support **automatic sensor detection** via USB OTG and Bluetooth
+3. **Automatically start data collection** when sensors connect
+4. Provide **driver visibility** of which devices are connected in real-time
+5. Support **multiple truck sensor types**:
+   - **CAN Bus** (STM32 MCU via UART)
+   - **Parking Sensors** (주차 파킹 센서) - USB
+   - **Dashcams** (블랙박스) - USB
+   - **Refrigeration Temperature Sensors** (냉장냉온 온도측정 센서) - BLE
+   - **Load Weight Sensors** (적재무게 측정 센서) - USB
+   - **Tire Sensors / TPMS** (휠 타이어 센서) - BLE
+
+This represents a fundamental shift from a standalone app to a **comprehensive multi-sensor hub** architecture.
+
+### Architecture Document Overview
+
+**File**: `docs/EDGEAI_SDK_ARCHITECTURE.md` (1,800+ lines, 16 sections)
+
+#### 1. SDK Module Structure ✅
+**Key Design**:
+```
+edgeai-sdk/
+├── EdgeAIManager.kt          # Public SDK entry point
+├── config/
+│   ├── SDKConfig.kt           # SDK configuration
+│   └── SensorConfig.kt        # Per-sensor settings
+├── sensor/
+│   ├── SensorAutoDetector.kt  # USB/BLE auto-detection
+│   ├── MultiSensorManager.kt  # Multi-sensor orchestration
+│   ├── usb/
+│   │   ├── USBSensorDriver.kt
+│   │   └── STM32Driver.kt
+│   └── ble/
+│       ├── BLESensorScanner.kt
+│       └── BLESensorDriver.kt
+├── collection/
+│   └── AutoDataCollector.kt   # Sensor-triggered collection
+└── ui/
+    └── SensorStatusListener.kt # Driver UI callbacks
+```
+
+**AAR Build Configuration**:
+- Gradle: Android Library plugin with Maven publishing
+- Min SDK: 26 (Android 8.0+, USB Host API requirement)
+- Target SDK: 34
+- Dependencies: ONNX Runtime, Nordic BLE, Coroutines
+
+#### 2. Core Components ✅
+
+##### a) EdgeAIManager (Public API)
+**Purpose**: Single entry point for SDK integration
+
+**Key Methods**:
+```kotlin
+object EdgeAIManager {
+    fun initialize(context: Context, config: SDKConfig)
+    fun startService()
+    fun stopService()
+    fun registerSensorStatusListener(listener: SensorStatusListener)
+    fun getConnectedSensors(): StateFlow<List<SensorStatus>>
+    fun scanForSensors()
+}
+```
+
+**Integration Example**:
+```kotlin
+// In Launcher App
+EdgeAIManager.initialize(
+    context = applicationContext,
+    config = SDKConfig(
+        autoStart = true,
+        autoSensorDetection = true,
+        autoDataCollection = true
+    )
+)
+EdgeAIManager.startService()
+```
+
+##### b) SensorAutoDetector
+**Purpose**: Automatic sensor detection via USB and BLE
+
+**Features**:
+- **USB Detection**:
+  - Device enumeration via `UsbManager`
+  - VID/PID matching for sensor identification
+  - Automatic permission request
+  - Plug/unplug event handling
+  - Recognized devices: STM32 (0x0483:0x5740), parking sensors, weight sensors, dashcams
+
+- **BLE Detection**:
+  - Nordic BLE library integration
+  - UUID/name-based identification
+  - Auto-pairing and connection
+  - RSSI monitoring for signal strength
+  - Recognized devices: Temperature sensors, TPMS, driver app
+
+**Latency Target**: <2 seconds from plug-in to data collection start
+
+##### c) MultiSensorManager
+**Purpose**: Manage lifecycle of all connected sensors
+
+**Responsibilities**:
+- Track connected sensors (thread-safe ConcurrentHashMap)
+- Coordinate data collection from multiple sensors simultaneously
+- Notify UI listeners of connection/disconnection events
+- Manage sensor state (connected, collecting, last data timestamp)
+- Provide StateFlow for UI observation
+
+**Key Features**:
+- Real-time sensor status updates
+- Automatic health monitoring (data received within 30s)
+- Per-sensor error handling
+- Graceful disconnection handling
+
+##### d) AutoDataCollector
+**Purpose**: Automatically start data collection when sensors connect
+
+**Per-Sensor Collection Logic**:
+| Sensor Type | Sampling Rate | Method |
+|-------------|---------------|--------|
+| CAN Bus | 1Hz | Blocking UART read |
+| Parking | 10Hz | Continuous polling |
+| Dashcam | Event-based | Harsh events only |
+| Temperature | 0.1Hz (10s) | BLE characteristic read |
+| Weight | 1Hz | USB bulk transfer |
+| Tire (TPMS) | 0.2Hz (5s) | BLE notifications |
+| Driver App | Event-based | BLE notifications |
+
+**Features**:
+- Kotlin Coroutines for async collection
+- Per-sensor job management (start/stop)
+- Error handling with callbacks
+- Automatic reconnection on failure
+
+#### 3. Sensor Type Definitions ✅
+
+**Enum: SensorType**:
+- `CAN_BUS` - STM32 DTG (UART 921600 baud)
+- `PARKING_SENSOR` - Ultrasonic/radar (USB)
+- `DASHCAM` - Video recording (USB/Wi-Fi)
+- `REFRIGERATION_TEMP` - Cold chain monitoring (BLE)
+- `LOAD_WEIGHT` - Axle weight sensors (USB)
+- `TIRE_SENSOR` - TPMS (BLE)
+- `DRIVER_APP` - Smartphone (BLE)
+- `UNKNOWN` - Unrecognized devices
+
+**Each sensor includes**:
+- Display name (Korean)
+- Icon (emoji for UI)
+- Connection type requirements (USB/BLE)
+- Validation logic
+
+#### 4. Driver UI Requirements ✅
+
+**SensorStatusListener Interface**:
+```kotlin
+interface SensorStatusListener {
+    fun onSensorConnected(status: SensorStatus)
+    fun onSensorDisconnected(status: SensorStatus)
+    fun onDataReceived(sensorId: String, sensorType: SensorType, data: Any)
+    fun onSensorError(sensorId: String, error: String)
+    fun onInferenceComplete(result: Any)
+}
+```
+
+**SensorStatus Data Model**:
+- Sensor ID, type, connection type
+- Connection status, data collection status
+- Connection timestamp, last data timestamp
+- Signal strength (for BLE)
+- Health check (is receiving data regularly?)
+
+**Sample UI Implementation**:
+- RecyclerView displaying all connected sensors
+- Real-time status updates (icon, name, connection type)
+- Toast notifications for connect/disconnect events
+- Color-coded health indicators
+
+#### 5. Launcher App Integration ✅
+
+**BootReceiver** (Auto-Start):
+```kotlin
+class BootReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == Intent.ACTION_BOOT_COMPLETED) {
+            EdgeAIManager.initialize(context)
+            EdgeAIManager.startService()
+        }
+    }
+}
+```
+
+**Launcher Configuration**:
+- Intent filter: `HOME`, `LAUNCHER`, `DEFAULT` categories
+- Kiosk mode (optional)
+- Always-on background service
+- Persistent notification with sensor status
+
+#### 6. Data Flow Architecture ✅
+
+**Complete Flow**:
+```
+1. Device Boot
+   └─> BootReceiver → EdgeAIManager.initialize() → startService()
+
+2. USB Device Attached (e.g., STM32 CAN Bus)
+   └─> USBDeviceReceiver → SensorAutoDetector.onUSBDeviceAttached()
+       └─> VID/PID check → requestPermission() → connectDevice()
+           └─> MultiSensorManager.onSensorConnected()
+
+3. Multi-Sensor Manager
+   └─> Update StateFlow → Notify listeners → startDataCollection()
+       └─> AutoDataCollector.startCollection() (Coroutine job)
+
+4. Data Collection Loop (1Hz for CAN)
+   └─> while (active) { readData() → onDataCollected() → delay(1000) }
+
+5. UI Update
+   └─> MainActivity.onSensorConnected() → Update RecyclerView → Show toast
+
+6. AI Inference (Every 60s)
+   └─> EdgeAIInferenceService.runInference()
+       └─> LightGBM + TCN + LSTM-AE → Results → MQTT/BLE
+```
+
+#### 7. Security & Privacy ✅
+
+**USB Security**:
+- VID/PID whitelisting (only known sensors)
+- User permission required
+- CRC validation on all data
+- Timeout on blocking reads
+
+**BLE Security**:
+- Pairing required
+- MITM protection enabled
+- Encrypted characteristics
+- Bonding for persistent pairing
+
+**Data Privacy**:
+- No PII stored locally
+- GPS truncated to 100m precision
+- TLS 1.3 for all network transmission
+- Certificate pinning for MQTT
+
+#### 8. Implementation Roadmap ✅
+
+**Total Estimated Time**: 14-19 days (local Android SDK environment required)
+
+| Phase | Duration | Goal | Deliverable |
+|-------|----------|------|-------------|
+| **Phase A: SDK Foundation** | 2-3 days | Create EdgeAI SDK module | `edgeai-sdk-1.0.0.aar` |
+| **Phase B: Auto-Detection** | 3-4 days | USB + BLE sensor detection | STM32 + BLE auto-connect |
+| **Phase C: Multi-Sensor** | 3-4 days | Support all 5+ sensor types | Simultaneous multi-sensor |
+| **Phase D: Driver UI** | 2 days | Real-time device visibility | RecyclerView sensor list |
+| **Phase E: Launcher App** | 2-3 days | Boot auto-start, kiosk mode | Production launcher |
+| **Phase F: Refactoring** | 2 days | Move existing code to SDK | Clean SDK architecture |
+| **Phase G: Documentation** | 1 day | API docs, integration guide | Production-ready docs |
+
+**Prerequisites**:
+- Local Android Studio environment (web environment cannot build SDK)
+- Android SDK 34 + NDK 26
+- Test hardware (parking sensor, BLE temperature, TPMS)
+- VID/PID documentation for all sensor types
+
+#### 9. API Reference ✅
+
+**Complete code examples provided for**:
+- EdgeAIManager usage (initialization, service control)
+- SensorStatusListener implementation (UI callbacks)
+- BootReceiver setup (auto-start)
+- MainActivity integration (RecyclerView)
+- AAR build configuration (Gradle)
+- AndroidManifest permissions and receivers
+
+#### 10. Testing Strategy ✅
+
+**Unit Tests** (Target: ≥80% coverage):
+- EdgeAIManagerTest
+- SensorAutoDetectorTest
+- MultiSensorManagerTest
+- AutoDataCollectorTest
+
+**Integration Tests**:
+- Boot → Service Start → Sensor Detection
+- USB Sensor Detection → Connect → Collect Data
+- BLE Sensor Detection → Pair → Collect Data
+- Multi-Sensor Simultaneous Collection
+- Reconnection Logic
+
+**Hardware-in-Loop Tests**:
+- 24-hour continuous operation
+- Memory/CPU/battery monitoring
+- Disconnect/reconnect cycles (100+)
+- Real vehicle environment testing
+
+### Success Criteria
+
+**Functional**:
+- ✅ SDK AAR builds successfully
+- ✅ Auto-detection works for USB and BLE sensors
+- ✅ All 5+ sensor types supported
+- ✅ Auto data collection starts on sensor connection
+- ✅ Driver UI shows connected devices in real-time
+- ✅ Launcher App auto-starts on boot
+- ✅ AI inference runs every 60 seconds
+- ✅ Results transmitted via MQTT/BLE
+
+**Non-Functional**:
+- ⏱️ Sensor detection latency < 2 seconds
+- 🔌 USB reconnection < 5 seconds
+- 📡 BLE reconnection < 10 seconds
+- 💾 Memory footprint < 150MB (all sensors active)
+- ⚡ CPU usage < 15% average (excluding inference)
+- 🔋 Battery drain < 3W average
+- 🧪 Test coverage ≥ 80%
+
+### Architecture Philosophy
+
+**"Zero Configuration, Full Automation"**:
+1. **Plug & Play**: Physical sensors auto-detected via USB OTG
+2. **Scan & Connect**: BLE sensors auto-discovered and paired
+3. **Collect & Analyze**: Data collection → AI analysis → Results (fully automated)
+4. **Visibility First**: Driver always knows what's connected and working
+
+### Next Steps
+
+**Immediate**:
+1. [ ] Stakeholder review and approval of architecture
+2. [ ] Budget allocation for implementation (14-19 days)
+3. [ ] Hardware procurement (parking sensor, BLE temp, TPMS, weight sensor)
+4. [ ] VID/PID documentation collection for all sensor types
+
+**Phase A Prerequisites**:
+1. [ ] Set up local Android Studio environment
+2. [ ] Create `edgeai-sdk` module
+3. [ ] Configure AAR build
+4. [ ] Implement EdgeAIManager skeleton
+
+### References
+
+- **Architecture Document**: `docs/EDGEAI_SDK_ARCHITECTURE.md` (1,800+ lines)
+- **Android USB Host API**: https://developer.android.com/guide/topics/connectivity/usb/host
+- **Android BLE Guide**: https://developer.android.com/guide/topics/connectivity/bluetooth-le
+- **Nordic BLE Library**: https://github.com/NordicSemiconductor/Android-BLE-Library
+
+### Impact on Overall Project
+
+**Architecture Refinement**:
+- Transforms DTG from standalone app to **comprehensive multi-sensor hub SDK**
+- Enables integration with any Android vehicle telematics application
+- Provides foundation for **fleet-wide sensor management**
+
+**Market Expansion**:
+- Beyond CAN bus to **5+ commercial vehicle sensor types**
+- Parking assistance integration
+- Cold chain monitoring (refrigerated trucks)
+- Load compliance (weight sensors)
+- Tire health monitoring (TPMS)
+- Dashcam video analysis integration
+
+**Business Value**:
+- **SDK licensing model**: Enable third-party integration
+- **Hardware compatibility**: Support diverse sensor manufacturers
+- **Driver experience**: Real-time visibility of all connected devices
+- **Fleet management**: Comprehensive vehicle telemetry
+
+---
+
 ## 🧪 Phase 3: Testing Status
 
 ### Completed Tests
@@ -1259,7 +1641,7 @@ class DTGForegroundService : Service() {
 
 ## 📝 Conclusion
 
-**Phase 2 (100% ✅) + Phase 3-A (100% ✅) + Phase 3-F (100% ✅) + Phase 3-G (100% ✅) + Phase 3-H (20% 📋) are complete/in-progress!**
+**Phase 2 (100% ✅) + Phase 3-A (100% ✅) + Phase 3-F (100% ✅) + Phase 3-G (100% ✅) + Phase 3-I (100% ✅) + Phase 3-H (20% 📋) are complete/in-progress!**
 
 The codebase now includes both base implementation AND production-verified integration modules:
 
@@ -1293,13 +1675,21 @@ The codebase now includes both base implementation AND production-verified integ
 - **Quality Gates**: Coverage ≥80%, Pass rate ≥95%, Security scans, Type safety
 - **Automation**: 80% reduction in manual QA work
 
-📋 **Dashcam Integration Planning Complete (Phase 3-H - NEW!)**:
+📋 **Dashcam Integration Planning Complete (Phase 3-H)**:
 - **Feasibility Analysis**: 1,200+ line technical report
 - **Conclusion**: ⚠️ Conditionally feasible (event-based analysis, optimization required)
 - **Recommended Model**: YOLOv5 Nano (3.8MB, 50-80ms inference)
 - **Resource Impact**: +3.8MB model, +0.1W avg power, +10MB avg memory
 - **Implementation**: Phase 1 POC (2 weeks) + Phase 2 Optimization (2 weeks)
 - **Business Value**: Korea's first DTG + dashcam AI integration, $3-8/vehicle/month net profit
+
+✅ **SDK Architecture Design Complete (Phase 3-I - NEW!)**:
+- **Architecture Document**: 1,800+ lines (16 sections)
+- **Key Innovation**: Transform DTG into comprehensive multi-sensor hub SDK
+- **Supported Sensors**: CAN Bus, Parking, Dashcam, Refrigeration Temp, Load Weight, Tire/TPMS, Driver App (7 types)
+- **Core Features**: Automatic sensor detection (USB/BLE), auto data collection, driver UI visibility, zero configuration
+- **Implementation**: 14-19 days roadmap (7 phases)
+- **Business Value**: SDK licensing model, hardware compatibility, fleet-wide sensor management
 
 ⏸️ **Pending Local Environment**:
 - Model training execution (requires GPU)
@@ -1310,12 +1700,17 @@ The codebase now includes both base implementation AND production-verified integ
 - Phase 3-H implementation: Dashcam POC + optimization (requires Android SDK, test dashcams)
 
 **Next Steps**:
-1. **Phase 3-H Approval**: Stakeholder review of dashcam feasibility report
-2. **Download 3D Assets**: 8 truck models from glec-dtg-ai-production
-3. **Phase 3-H POC**: USB OTG integration + YOLOv5 Nano (2 weeks)
-4. **Phase 3-B**: Voice UI panel integration
-5. **Phase 3-C**: Vertex AI Gemini hybrid
-6. **Phase 3-D**: Hardware E2E tests
+1. **Phase 3-I Implementation**: SDK architecture implementation (requires local Android SDK environment)
+   - Phase A: SDK Foundation (2-3 days)
+   - Phase B: Auto-Detection (3-4 days)
+   - Phase C: Multi-Sensor Support (3-4 days)
+   - Total: 14-19 days
+2. **Phase 3-H Approval**: Stakeholder review of dashcam feasibility report
+3. **Download 3D Assets**: 8 truck models from glec-dtg-ai-production
+4. **Phase 3-H POC**: USB OTG integration + YOLOv5 Nano (2 weeks)
+5. **Phase 3-B**: Voice UI panel integration
+6. **Phase 3-C**: Vertex AI Gemini hybrid
+7. **Phase 3-D**: Hardware E2E tests
 
 ---
 
