@@ -199,7 +199,8 @@ class RealtimeDataIntegrator:
             'invalid_records': self.stats['invalid_records'],
             'valid_rate_pct': valid_rate,
             'avg_processing_time_sec': self.stats['avg_processing_time'],
-            'throughput_rec_per_sec': self.stats['throughput'],
+            'throughput': self.stats['throughput'],  # Short alias
+            'throughput_rec_per_sec': self.stats['throughput'],  # Descriptive name
 
             # Production SLA checks
             'meets_latency_sla': self.stats['avg_processing_time'] < 5.0,

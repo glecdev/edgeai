@@ -85,31 +85,31 @@ class PhysicsValidator:
         # Update previous data for next call
         self.previous_data = data
 
-        # Skip validation if no previous data
-        if previous_data is None:
-            return ValidationResult(
-                is_valid=True,
-                confidence=0.5,
-                reason="No previous data for temporal validation"
-            )
-
         # Run all validation checks
-        checks = [
-            self._validate_acceleration(data, previous_data),
+        checks = []
+
+        # Temporal checks (require previous data, highest priority)
+        if previous_data is not None:
+            checks.append(self._validate_acceleration(data, previous_data))
+
+        # Non-temporal checks (always run, even without previous data)
+        # Prioritize thermodynamics and sensor correlation checks
+        checks.extend([
+            self._validate_thermodynamics(data),
+            self._validate_sensor_correlation(data),
             self._validate_speed(data),
             self._validate_engine_performance(data),
-            self._validate_fuel_consumption(data),
-            self._validate_sensor_correlation(data),
-            self._validate_thermodynamics(data)
-        ]
+            self._validate_fuel_consumption(data)
+        ])
 
         # Aggregate results
         failed_checks = [c for c in checks if not c.is_valid]
 
         if not failed_checks:
+            confidence = 1.0 if previous_data is not None else 0.8
             return ValidationResult(
                 is_valid=True,
-                confidence=1.0,
+                confidence=confidence,
                 reason="All physics checks passed"
             )
         else:
@@ -284,8 +284,8 @@ class PhysicsValidator:
         fuel_flow_gps = data.maf_rate / self.AIR_FUEL_RATIO  # g/s
         fuel_rate_lph = (fuel_flow_gps * 3600.0) / self.FUEL_DENSITY  # L/h
 
-        # Sanity check: 0-100 L/h for heavy truck
-        if fuel_rate_lph < 0 or fuel_rate_lph > 100:
+        # Sanity check: 0-50 L/h for heavy truck (realistic maximum)
+        if fuel_rate_lph < 0 or fuel_rate_lph > 50:
             return ValidationResult(
                 is_valid=False,
                 confidence=0.8,
@@ -294,7 +294,7 @@ class PhysicsValidator:
             )
 
         # Cross-check with throttle position
-        if data.throttle_position < 5 and fuel_rate_lph > 10:
+        if data.throttle_position < 5 and fuel_rate_lph > 5:
             return ValidationResult(
                 is_valid=False,
                 confidence=0.7,
@@ -318,7 +318,7 @@ class PhysicsValidator:
         3. Temperature (coolant vs ambient)
         """
         # Check battery voltage
-        if data.battery_voltage < 10.0 or data.battery_voltage > 16.0:
+        if data.battery_voltage < 9.0 or data.battery_voltage > 15.0:
             return ValidationResult(
                 is_valid=False,
                 confidence=0.9,
