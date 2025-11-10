@@ -26,6 +26,63 @@
    → Follow Red-Green-Refactor cycle (see below)
 ```
 
+### ⚡ ROOT CAUSE RESOLUTION - Production-Grade Quality Imperative
+
+**CRITICAL**: 근본 문제를 해결하라. 단순화나 우회로 상용화급 품질을 포기하지 마라.
+
+**철칙 (DO NOT VIOLATE)**:
+
+1. **절대 단순화하지 마라 (NEVER Simplify)**
+   - ❌ 의존성 설치 실패 → 간단한 버전 만들기 (BAD)
+   - ✅ 의존성 설치 실패 → 근본 원인 해결 (`--ignore-installed`, 가상환경 수정 등)
+   - ❌ 테스트 실패 → 테스트 비활성화 (BAD)
+   - ✅ 테스트 실패 → 코드 또는 테스트 수정으로 해결
+
+2. **상용화급 품질 기준**
+   - 모든 의존성 제대로 설치 (MLflow, transformers, 모든 production 도구)
+   - 원본 코드 사용 (simplified 버전 금지)
+   - 전체 테스트 suite 통과
+   - Production 설정 유지 (config, logging, monitoring)
+
+3. **의존성 문제 해결 방법**
+   ```bash
+   # ❌ 나쁜 예: MLflow 제거하고 단순 버전 만들기
+   # ✅ 좋은 예: 근본 원인 해결
+   pip install --ignore-installed blinker mlflow  # 시스템 패키지 충돌 우회
+   pip install --upgrade --force-reinstall mlflow  # 강제 재설치
+   python3 -m venv venv && source venv/bin/activate  # 가상환경 사용
+   ```
+
+4. **품질 체크리스트 (Every Commit)**
+   - [ ] 모든 production 의존성 설치됨?
+   - [ ] 원본 코드 사용 (simplified/workaround 없음)?
+   - [ ] 전체 기능 동작 (일부 비활성화 없음)?
+   - [ ] 테스트 통과 (skip 없음)?
+
+**예시: MLflow 설치 실패 해결**
+```python
+# ❌ 잘못된 접근 (단순화)
+# - train_lightgbm.py에서 MLflow import 제거
+# - train_lightgbm_simple.py 생성 (기능 축소)
+# → 상용화급 품질 저하!
+
+# ✅ 올바른 접근 (근본 해결)
+# 1. 오류 분석: blinker 1.7.0 시스템 패키지 충돌
+# 2. 해결: pip install --ignore-installed blinker mlflow
+# 3. 검증: import mlflow 성공
+# → Production-grade 유지!
+```
+
+**실패 사례 (Learn from This)**:
+- Issue: MLflow 설치 시 blinker 충돌
+- 잘못된 해결: `train_lightgbm_simple.py` 생성 (MLflow 제거)
+- 문제: Production tracking, experiment management 상실
+- 올바른 해결: `--ignore-installed` 플래그로 근본 해결
+
+**Remember**: "재귀적으로 천천히 상용화급으로 진행" = 근본 문제 해결, 품질 타협 금지
+
+---
+
 ### Environment Constraints (Web-Based Development)
 
 **Available**:
