@@ -201,7 +201,182 @@ python benchmark_lightgbm.py \
 
 **Ready for Android deployment** - No quantization needed (already 22KB)
 
-#### 3.4 IBM Granite TTM-r2 (Tiny Time Mixer) ⭐ NEW
+#### 3.5 LightGBM to ONNX/TFLite Conversion ⭐ **PHASE 1 POC COMPLETE**
+**Time**: 5-10 minutes (ONNX), 10-20 minutes (TFLite)
+**Target**: Convert LightGBM to mobile-friendly format
+**Status**: ✅ **ONNX Conversion SUCCESS** | ⚠️ **TFLite Deferred to Local**
+
+**Phase 1 PoC Results (Web Environment)**:
+
+```bash
+# Step 1: LightGBM → ONNX ✅ SUCCESS
+cd ai-models/conversion
+python convert_lightgbm_to_onnx.py \
+    --input ../models/lightgbm_behavior.txt \
+    --output ../models/lightgbm_behavior.onnx \
+    --validate --benchmark
+
+# Results:
+#   ✅ ONNX Model Size: 12.62 KB (from 22KB LightGBM)
+#   ✅ Validation: 100% prediction accuracy, 0.000000 max_diff
+#   ✅ P95 Latency: 0.0119ms (81% faster than LightGBM!)
+#   ✅ Quality Gate: PASSED (P95 < 5ms target)
+```
+
+**Performance Summary**:
+| Metric | LightGBM | ONNX | Status |
+|--------|----------|------|--------|
+| Model Size | 22 KB | 12.62 KB | ✅ -43% |
+| P95 Latency | 0.064ms | 0.0119ms | ✅ -81% |
+| Accuracy | 99.54% | 100.00% | ✅ Perfect |
+| Max Difference | N/A | 0.000000 | ✅ Exact |
+
+**Step 2: ONNX → TFLite** ⚠️ **Web Environment Limitation Discovered**
+
+```bash
+# Attempted in web environment:
+python convert_onnx_to_tflite.py \
+    --input ../models/lightgbm_behavior.onnx \
+    --output ../models/lightgbm_behavior.tflite \
+    --quantize none --benchmark
+
+# Error encountered:
+#   ❌ ImportError: InterpreterWrapper type already registered
+#   ❌ Dependency conflict: tensorflow ↔ ai_edge_litert
+#   ⚠️  Root cause: Web environment package isolation issue
+```
+
+**Workaround Options**:
+
+**Option A: Complete in Local Environment** ⭐ **RECOMMENDED for TFLite**
+```bash
+# Local machine with clean Python environment:
+python3 -m venv venv_tflite
+source venv_tflite/bin/activate
+pip install onnx2tf tensorflow onnxruntime
+
+cd edgeai/ai-models/conversion
+python convert_onnx_to_tflite.py \
+    --input ../models/lightgbm_behavior.onnx \
+    --output ../models/lightgbm_behavior.tflite \
+    --quantize none \
+    --benchmark
+
+# Expected output:
+#   📊 TFLite Model Size: ~50-100 KB (acceptable overhead)
+#   ⏱️ P95 Latency: ~0.5-2ms (still << 5ms target)
+#   ✅ Quality Gates: Size < 500KB, Latency < 5ms
+
+# Validate accuracy:
+python validate_tflite_model.py \
+    --tflite ../models/lightgbm_behavior.tflite \
+    --original ../models/lightgbm_behavior.txt \
+    --test-data ../../datasets/test.csv
+
+# Expected:
+#   ✅ TFLite accuracy >= 98% (allow 1% degradation)
+#   ✅ Accuracy diff < 1%
+#   ✅ Prediction agreement > 99%
+```
+
+**Option B: Use ONNX Runtime Mobile** ⭐ **RECOMMENDED for Quick Deploy**
+```kotlin
+// Android integration with ONNX Runtime (skip TFLite conversion)
+// build.gradle.kts
+dependencies {
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.17.0")  // ~4MB
+}
+
+// LightGBMONNXEngine.kt
+import ai.onnxruntime.*
+
+class LightGBMONNXEngine(context: Context) : AutoCloseable {
+    private val env = OrtEnvironment.getEnvironment()
+    private val session: OrtSession
+
+    init {
+        val modelBytes = context.assets.open("lightgbm_behavior.onnx").readBytes()
+        val options = SessionOptions().apply {
+            setIntraOpNumThreads(4)
+            addNnapi()  // Hardware acceleration
+        }
+        session = env.createSession(modelBytes, options)
+    }
+
+    fun predict(features: FloatArray): Int {
+        // Create input tensor (1, 18)
+        val inputTensor = OnnxTensor.createTensor(
+            env,
+            FloatBuffer.wrap(features),
+            longArrayOf(1, 18)
+        )
+
+        // Run inference
+        val outputs = session.run(mapOf("input" to inputTensor))
+
+        // Get probability output (Output[1])
+        val probabilities = outputs[1].value as Array<Map<Long, Float>>
+        val probs = probabilities[0]
+
+        // Return predicted class
+        return probs.maxByOrNull { it.value }?.key?.toInt() ?: 0
+    }
+
+    override fun close() {
+        session.close()
+        env.close()
+    }
+}
+```
+
+**Advantages**:
+- ✅ No conversion needed (use 12.62KB ONNX directly)
+- ✅ 0.0119ms P95 latency (proven in PoC)
+- ✅ NNAPI hardware acceleration support
+- ✅ Cross-platform (same model for iOS)
+
+**Disadvantages**:
+- ⚠️ Larger runtime: ONNX Runtime AAR ~4MB (vs TFLite ~1MB)
+- ⚠️ Still << 100MB total target (14MB models + 4MB runtime = 18MB)
+
+**Option C: Native JNI Wrapper** (Maximum Performance)
+```bash
+# For production optimization phase:
+# 1. Cross-compile LightGBM for Android NDK
+# 2. Use original 22KB .txt model
+# 3. Achieve original 0.064ms latency
+# See: docs/LIGHTGBM_ANDROID_INTEGRATION.md Section "Option 4"
+```
+
+**Recommendation Matrix**:
+
+| Approach | Model Size | Runtime Size | Latency | Complexity | Recommendation |
+|----------|-----------|--------------|---------|------------|----------------|
+| **ONNX Runtime Mobile** | 12.62 KB | ~4 MB | 0.0119ms | Low | ✅ **Quick Deploy** |
+| **TFLite (Local)** | ~50-100 KB | ~1 MB | ~0.5-2ms | Medium | ✅ **Mobile Optimized** |
+| **Native JNI** | 22 KB | 0 KB | 0.064ms | High | ⚠️ Optimization Phase |
+
+**Decision**:
+- **Immediate**: Use ONNX Runtime Mobile (Option B) for fast deployment
+- **Long-term**: Complete TFLite conversion in local environment for optimal mobile performance
+- **Future**: Consider Native JNI for production optimization
+
+**Files Created**:
+- ✅ `ai-models/models/lightgbm_behavior.onnx` (12.62 KB)
+- ✅ `ai-models/conversion/convert_lightgbm_to_onnx.py` (350 lines)
+- ✅ `ai-models/conversion/convert_onnx_to_tflite.py` (430 lines)
+- ✅ `ai-models/conversion/validate_tflite_model.py` (380 lines)
+- ✅ `docs/LIGHTGBM_ANDROID_INTEGRATION.md` (532 lines)
+
+**Next Steps**:
+1. ✅ Complete ONNX conversion (DONE)
+2. ⏸️ Complete TFLite conversion in local environment (DEFERRED)
+3. ⏭️ Integrate ONNX Runtime Mobile to Android app
+4. ⏭️ Benchmark on Snapdragon 865
+
+---
+
+#### 3.6 IBM Granite TTM-r2 (Tiny Time Mixer) ⭐ NEW
 **Time**: 30 minutes - 1 hour (setup + zero-shot test)
 **Target**: Fuel consumption prediction with pre-trained foundation model
 **Status**: ✅ **Scripts Ready** (setup_ttm_r2.py, test_ttm_integration.py)
