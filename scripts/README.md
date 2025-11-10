@@ -100,6 +100,98 @@ Verify development environment prerequisites and configuration.
 
 ---
 
+### 📊 validate_data_quality.sh - Data Quality Validator
+
+Automated validation of training datasets and CAN data quality.
+
+**Usage:**
+```bash
+./scripts/validate_data_quality.sh
+```
+
+**Features:**
+- **Dataset validation**: Checks train/val/test CSV files
+- **Column validation**: Ensures required CAN data columns present
+- **Range validation**: Verifies values within physical limits
+  - Speed: 0-255 km/h
+  - RPM: 0-16383
+  - Throttle: 0-100%
+  - Coolant: -40 to 215°C
+- **Quality checks**: Missing values, duplicates, statistics
+- **Model verification**: Checks ONNX model files exist
+- **Quality score**: Percentage-based scoring system
+
+**Validations Performed:**
+1. Dataset files exist (train.csv, val.csv, test.csv)
+2. Required columns present (vehicle_speed, engine_rpm, throttle, brake, fuel, coolant)
+3. No missing values (or acceptable percentage)
+4. No duplicate rows
+5. Value ranges within physical limits
+6. Statistical properties (mean, std within expected ranges)
+7. Model files present in ai-models/trained_models/
+
+**When to use:**
+- After generating synthetic data
+- Before training models
+- After data preprocessing
+- Regular data quality audits
+- CI/CD pipeline for data validation
+
+**Output:**
+- Detailed validation report with pass/fail status
+- Quality score (percentage)
+- Recommendations for fixing issues
+
+---
+
+### ⚡ benchmark_performance.sh - Performance Benchmarking
+
+Comprehensive performance testing for AI models and data pipeline.
+
+**Usage:**
+```bash
+./scripts/benchmark_performance.sh
+```
+
+**Features:**
+- **Model size verification**: Total size of all ONNX models
+- **Inference latency**: P50, P95, P99 percentiles (1000 iterations)
+- **Throughput testing**: Records processed per second
+- **Memory usage**: Baseline, after load, after inference
+- **Accuracy metrics**: If test dataset available
+- **End-to-end pipeline**: Full CAN→AI workflow benchmark
+- **JSON report**: Machine-readable results with timestamp
+
+**Performance Targets:**
+| Metric | Target | Measured |
+|--------|--------|----------|
+| Inference Latency (P95) | <50ms | ✓ |
+| Throughput | >250 rec/sec | ✓ |
+| Memory Usage | <50MB | ✓ |
+| Model Size | <14MB | ✓ |
+
+**Benchmarks Included:**
+1. **Model Size**: Verify total ONNX model size
+2. **Inference Latency**: Measure inference time (P50/P95/P99)
+3. **Throughput**: Realtime integration pipeline speed
+4. **Memory Usage**: psutil-based memory profiling
+5. **Accuracy**: Classification accuracy on test set
+6. **End-to-End**: Full pipeline (validation + features + inference)
+
+**When to use:**
+- After training new models
+- Before deployment
+- Performance regression testing
+- Optimization validation
+- Release criteria verification
+
+**Output:**
+- Terminal report with color-coded pass/fail
+- JSON benchmark report (`benchmark-report-YYYYMMDD-HHMMSS.json`)
+- Comparison against production targets
+
+---
+
 ### 🎨 format_code.sh - Code Formatter
 
 Automatically format Python code using Black and isort.
@@ -189,22 +281,28 @@ Run all quality checks before committing:
 # 1. Verify environment (first time only)
 ./scripts/verify_environment.sh
 
-# 2. Run all tests
+# 2. Validate data quality (if working with datasets)
+./scripts/validate_data_quality.sh
+
+# 3. Run all tests
 ./scripts/run_all_tests.sh
 
-# 3. Generate coverage report
+# 4. Generate coverage report
 ./scripts/generate_coverage.sh
 
-# 4. Format code
+# 5. Format code
 ./scripts/format_code.sh
 
-# 5. Check types
+# 6. Check types
 ./scripts/type_check.sh
 
-# 6. Security scan
+# 7. Security scan
 ./scripts/security_scan.sh
 
-# 7. Commit if all pass
+# 8. Benchmark performance (before release)
+./scripts/benchmark_performance.sh
+
+# 9. Commit if all pass
 git add -A
 git commit -m "your message"
 git push
