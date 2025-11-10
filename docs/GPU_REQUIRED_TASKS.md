@@ -940,6 +940,294 @@ If issues arise during GPU tasks:
 
 ---
 
-**Last Updated**: 2025-01-09
-**Status**: All GPU tasks deferred to local environment
-**Next Review**: After web-based tasks completed
+## 6. Phase 3-H: Dashcam Video Integration (NEW!)
+**Status**: 📋 Planning Complete (20%), awaiting implementation
+**Priority**: Medium (optional feature, after Phase 3 completion)
+**Estimated Time**: 4 weeks (2 weeks POC + 2 weeks optimization)
+
+**Prerequisites**:
+- Android Studio with NDK
+- ONNX Runtime Android SDK
+- Test dashcams (3 Korean brands: Inavy, FineVu, Thinkware)
+- Test vehicle with DTG device
+- YOLOv5 Nano model (3.8MB INT8)
+
+**Resource Impact**:
+- Model size: +3.8MB (YOLOv5 Nano)
+- Average power: +0.1W (event-based analysis)
+- Peak power: +0.8W (during CV inference)
+- Average memory: +10MB
+- Peak memory: +20MB (during analysis)
+- Data transfer: +100MB/hour (event videos)
+
+### 6.1 Phase 1: POC (2 weeks)
+**Goal**: USB integration + object detection proof-of-concept
+
+```bash
+# Task 1: USB OTG Integration (3 days)
+# File: android-dtg/app/src/main/java/com/glec/dtg/dashcam/BlackboxManager.kt
+
+# Features to implement:
+# - Android USB Host API integration
+# - Dashcam device enumeration
+# - MP4 file access and reading
+# - Key frame extraction (MediaMetadataRetriever)
+# - Event timestamp-based video fetching (±5 seconds)
+
+# Expected output:
+#   BlackboxManager.kt (300+ lines)
+#   USB device detection and connection
+#   Video file reading from dashcam storage
+#   Key frame extraction (5 frames from 10-second clips)
+```
+
+```bash
+# Task 2: YOLOv5 Nano Integration (5 days)
+# File: android-dtg/app/src/main/java/com/glec/dtg/inference/ComputerVisionAnalyzer.kt
+
+# Step 2.1: Download and quantize model
+cd ai-models/models
+wget https://github.com/ultralytics/yolov5/releases/download/v7.0/yolov5n.onnx
+python ../optimization/quantize_yolo.py \
+    --input yolov5n.onnx \
+    --output yolov5n_int8.onnx \
+    --method int8
+
+# Expected output:
+#   yolov5n_int8.onnx (3.8MB)
+
+# Step 2.2: Android ONNX Runtime integration
+# Features to implement:
+# - ONNX Runtime Mobile session management
+# - NNAPI/SNPE hardware acceleration
+# - Frame preprocessing (resize to 640x640, normalize)
+# - NMS (Non-Maximum Suppression) post-processing
+# - Bounding box and class detection
+# - 80 COCO classes support
+
+# Expected output:
+#   ComputerVisionAnalyzer.kt (400+ lines)
+#   Object detection (cars, people, traffic lights, etc.)
+#   Inference latency: 50-80ms per frame
+```
+
+```bash
+# Task 3: Event-Based Trigger (3 days)
+# File: android-dtg/app/src/main/java/com/glec/dtg/services/DTGForegroundService.kt
+
+# Features to implement:
+# - Event detection from CAN data
+#   - Harsh acceleration (>3 m/s²)
+#   - Harsh braking (<-4 m/s²)
+#   - Sharp turn (gyro >30°/s)
+#   - Collision (accel >11.81 m/s²)
+#   - Speeding (>100 km/h)
+# - Async video analysis pipeline (Kotlin Coroutines)
+# - YOLOv5 inference on 5 key frames
+# - Result storage and MQTT publishing
+
+# Expected output:
+#   Enhanced DTGForegroundService (+150 lines)
+#   Event detection logic
+#   Async analysis pipeline
+#   MQTT event payload with object detections
+```
+
+```bash
+# Task 4: Performance Testing (3 days)
+# File: tests/test_dashcam_integration.py
+
+# Tests to create:
+# - USB connection stability
+# - Video file reading performance
+# - Key frame extraction latency (<500ms)
+# - YOLOv5 inference latency (target <100ms per frame)
+# - Memory usage profiling (peak <60MB)
+# - Power consumption measurement
+# - End-to-end event analysis (<3 seconds)
+
+# Expected output:
+#   test_dashcam_integration.py (400+ lines)
+#   Performance benchmark report
+#   Memory profiling results
+#   Power consumption analysis
+```
+
+**Deliverables (Phase 1)**:
+- [ ] BlackboxManager.kt (USB OTG integration)
+- [ ] ComputerVisionAnalyzer.kt (YOLOv5 Nano inference)
+- [ ] Enhanced DTGForegroundService (event-based analysis)
+- [ ] test_dashcam_integration.py (performance tests)
+- [ ] Performance benchmark report
+- [ ] yolov5n_int8.onnx model (3.8MB)
+
+### 6.2 Phase 2: Optimization (2 weeks)
+**Goal**: Real-world vehicle environment testing and optimization
+
+```bash
+# Task 1: Model Optimization (3 days)
+
+# Step 1.1: INT8 quantization validation
+python ../optimization/validate_yolo_quantization.py \
+    --original yolov5n.onnx \
+    --quantized yolov5n_int8.onnx \
+    --test-images ../../test-images/
+
+# Expected:
+#   mAP degradation < 5% (acceptable)
+#   Size reduction: 14MB → 3.8MB (73% reduction)
+
+# Step 1.2: SNPE DLC conversion (Qualcomm hardware acceleration)
+snpe-onnx-to-dlc \
+    --input_network yolov5n_int8.onnx \
+    --output_path yolov5n_int8.dlc
+
+# Expected:
+#   yolov5n_int8.dlc (~3.5MB)
+#   Inference speedup: 2-3x on Snapdragon DSP/HTP
+
+# Step 1.3: Inference speed optimization
+# - Batch preprocessing (reduce overhead)
+# - Memory pool reuse
+# - Thread affinity tuning
+# Target: 50-80ms → 30-50ms per frame
+```
+
+```bash
+# Task 2: Power Management (2 days)
+# File: android-dtg/app/src/main/java/com/glec/dtg/dashcam/PowerAwareAnalyzer.kt
+
+# Features to implement:
+# - Battery level monitoring
+# - Charging state detection
+# - Power-aware analysis policy:
+#   - Charging: Always analyze
+#   - Battery >30%: Normal analysis
+#   - Battery 15-30%: Critical events only
+#   - Battery <15%: Disable analysis
+# - Doze mode compatibility
+
+# Expected output:
+#   PowerAwareAnalyzer.kt (150+ lines)
+#   Battery-based analysis control
+#   Power consumption <0.15W average
+```
+
+```bash
+# Task 3: Real Vehicle Testing (5 days)
+
+# Test dashcams:
+# - 아이나비 (Inavy) QXD5000 Mini
+# - 파인뷰 (FineVu) X3000
+# - 팅크웨어 (Thinkware) Q800 PRO
+
+# Test scenarios:
+# - Highway driving (80-120 km/h)
+# - City driving (stop-and-go traffic)
+# - Harsh braking events (intentional)
+# - Sharp turns
+# - Night driving (low light conditions)
+
+# Data collection:
+# - 3 dashcam models × 3 scenarios × 2 hours = 18 hours
+# - Collect:
+#   - Detection accuracy (vehicles, people)
+#   - False positive rate
+#   - Inference latency distribution
+#   - Memory usage patterns
+#   - Power consumption
+#   - Dashcam compatibility issues
+
+# Expected output:
+#   Real vehicle test report (20+ pages)
+#   Compatibility matrix (3 dashcams)
+#   False positive analysis
+#   Performance degradation in edge cases
+```
+
+```bash
+# Task 4: Documentation (4 days)
+
+# Documents to create:
+# 1. User Guide (dashcam connection, 150+ lines)
+#    - Supported dashcam models
+#    - USB OTG connection steps
+#    - Troubleshooting guide
+#    - LED status indicators
+#
+# 2. API Documentation (200+ lines)
+#    - BlackboxManager API
+#    - ComputerVisionAnalyzer API
+#    - PowerAwareAnalyzer API
+#    - Event detection thresholds
+#
+# 3. Performance Tuning Guide (150+ lines)
+#    - Battery optimization tips
+#    - Analysis frequency tuning
+#    - Memory management
+#    - Inference speed optimization
+
+# Expected output:
+#   docs/DASHCAM_USER_GUIDE.md (150+ lines)
+#   docs/DASHCAM_API_REFERENCE.md (200+ lines)
+#   docs/DASHCAM_PERFORMANCE_TUNING.md (150+ lines)
+```
+
+**Deliverables (Phase 2)**:
+- [ ] Optimized YOLOv5 model (SNPE DLC, 30-50ms inference)
+- [ ] PowerAwareAnalyzer.kt (battery-based control)
+- [ ] Real vehicle test report (3 dashcam models)
+- [ ] User guide (dashcam connection)
+- [ ] API reference documentation
+- [ ] Performance tuning guide
+
+### 6.3 Phase 3: Advanced Features (Optional, 2 weeks)
+**Goal**: Lane detection or driver monitoring (low priority)
+
+**Status**: ⏸️ Pending Phase 1/2 completion and evaluation
+
+**Potential Features**:
+- Ultra-Fast-Lane-Detection integration (2.3MB)
+- Lane departure warning
+- Highway/city road auto-switching
+- Driver monitoring (requires internal camera)
+
+**Requirements**:
+- Additional model: Ultra-Fast-Lane (2.3MB)
+- Total model size: 15.0MB + 2.3MB = 17.3MB (re-evaluate budget)
+- Additional power: +0.1W average
+
+**Decision**: Defer until Phase 1/2 results validate business value
+
+### 6.4 Success Criteria
+**Must Pass Before Production**:
+- [ ] Event detection → analysis completion: <3 seconds
+- [ ] Average power increase: <10% (from 2.0W baseline)
+- [ ] Peak memory usage: <60MB
+- [ ] Object detection accuracy: >80% (vehicles, people)
+- [ ] Dashcam compatibility: 3+ major Korean brands
+- [ ] False positive rate: <5% (incorrect event detections)
+- [ ] USB connection stability: >95% uptime
+- [ ] Data transfer cost: <$3/vehicle/month
+
+### 6.5 Business Value
+**Market Differentiation**:
+- Korea's first DTG + dashcam AI integration
+- Insurance claim automation (visual evidence)
+- Driver safety improvement (collision avoidance insights)
+- Fleet management enhancement (incident analysis)
+
+**Expected ROI**:
+- Development cost: $10,000 (one-time)
+- Operating cost increase: $2/vehicle/month
+- Expected premium: $5-10/vehicle/month
+- **Net profit**: $3-8/vehicle/month
+- Break-even: 1,250-3,333 vehicles
+
+**Reference**: See [docs/BLACKBOX_INTEGRATION_FEASIBILITY.md](docs/BLACKBOX_INTEGRATION_FEASIBILITY.md) for complete 1,200-line technical analysis
+
+---
+
+**Last Updated**: 2025-01-10
+**Status**: Phase 3-H planning complete, implementation deferred to local environment
+**Next Review**: After Phase 3-G completion and stakeholder approval
