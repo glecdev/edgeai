@@ -44,6 +44,34 @@
 
 ---
 
+## ⚡ Quick Start (Local Environment Only)
+
+**Note**: These setup steps are for local development environments with full hardware access.
+
+### Initial Setup
+```bash
+# Python environment
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Android setup (requires Android Studio + NDK 26.1.10909125)
+cd android-dtg
+./gradlew assembleDebug
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+```
+
+### Prerequisites
+- Python 3.9 or 3.10
+- Android Studio Hedgehog | 2023.1.1+
+- Android NDK 26.1.10909125
+- Qualcomm SNPE SDK (device deployment only)
+- STM32CubeIDE (firmware development only)
+
+For detailed architecture and integration information, see [README.md](README.md).
+
+---
+
 ## 🔴🟢🔵 Red-Green-Refactor: The Core Development Cycle
 
 **You are an expert practitioner of Test-Driven Development (TDD) and the Red-Green-Refactor cycle.**
@@ -405,6 +433,22 @@ edgeai/
 
 **Total**: ~12MB models, 30ms parallel inference
 
+### Production Integration (Phase 3-A) ✅
+
+**Integrated from**: [glec-dtg-ai-production](https://github.com/glecdev/glec-dtg-ai-production)
+
+**Key Modules Added**:
+1. **Realtime Data Pipeline** - 47x performance improvement (238s → 5s), 254.7 rec/sec
+2. **Physics-Based Validation** - Newton's laws, 6 anomaly types, sensor correlation
+3. **J1939 CAN Protocol** - 12 PGNs for commercial vehicles (Engine, TPMS, Weight, DPF)
+4. **3D Dashboard** - Three.js truck rendering with WebView bridge
+5. **AI Model Manager** - Semantic versioning, hot-swapping, multi-runtime (SNPE/TFLite)
+6. **Truck Voice Commands** - 12 Korean truck-specific voice commands
+
+**Impact**: 50-60% development time reduction through production code reuse
+
+See [docs/INTEGRATION_ANALYSIS.md](docs/INTEGRATION_ANALYSIS.md) and [README.md](README.md) for details.
+
 ---
 
 ## 🛠️ Common Workflows
@@ -512,22 +556,44 @@ git push
 ### Test Execution
 
 ```bash
-# Python (AI models, utilities)
-pytest tests/ -v --cov=ai-models --cov=fleet-integration
+# Python AI Models & Data Generation (Web-Compatible)
+pytest tests/test_synthetic_simulator.py -v      # 14 tests - synthetic data generator
+pytest ai-models/tests/test_tcn.py -v            # TCN fuel prediction model
+pytest ai-models/tests/test_lstm_ae.py -v        # LSTM-AE anomaly detection
+pytest ai-models/tests/test_lightgbm.py -v       # LightGBM behavior classification
 
-# Android DTG
+# Production Integration Tests (Phase 3-A)
+python -m unittest tests.test_can_parser           # 18 tests - CAN protocol
+python -m unittest tests.test_realtime_integration # 8 tests - realtime pipeline
+python -m unittest tests.test_physics_validation   # 20+ tests - physics checks
+
+# Coverage Report
+pytest tests/ -v --cov=ai-models --cov=fleet-integration --cov-report=html
+
+# Android DTG (Requires Android SDK)
 cd android-dtg
 ./gradlew testDebugUnitTest
 ./gradlew connectedAndroidTest  # Requires device/emulator
 
-# Android Driver
-cd android-driver
-./gradlew testDebugUnitTest
-
-# Integration tests
+# Integration Tests (Requires Hardware)
 python tests/e2e_test.py --duration 300
-python tests/data_validator.py --input datasets/train.csv
 python tests/benchmark_inference.py --model tcn --iterations 1000
+```
+
+### Data Generation (CPU-Only, No GPU Required)
+
+```bash
+# Generate 35,000 synthetic training samples (2h, CPU-only)
+cd data-generation
+python synthetic_driving_simulator.py --output-dir ../datasets --samples 35000
+
+# Output:
+#   datasets/train.csv (28,000 samples, 80%)
+#   datasets/val.csv (3,500 samples, 10%)
+#   datasets/test.csv (3,501 samples, 10%)
+
+# Validate dataset quality
+python tests/data_validator.py --input datasets/train.csv
 ```
 
 ### Performance Targets
