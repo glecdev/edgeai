@@ -41,6 +41,7 @@ class DTGForegroundService : Service() {
 
     private var canReceiverJob: Job? = null
     private var inferenceJob: Job? = null
+    private var statusJob: Job? = null
 
     private var wakeLock: PowerManager.WakeLock? = null
 
@@ -156,6 +157,9 @@ class DTGForegroundService : Service() {
             // Start AI inference scheduler
             startInferenceScheduler()
 
+            // Start device status publisher
+            startStatusPublisher()
+
             isRunning = true
             dataCollectionStartTime = System.currentTimeMillis()
 
@@ -181,6 +185,7 @@ class DTGForegroundService : Service() {
         // Stop jobs
         canReceiverJob?.cancel()
         inferenceJob?.cancel()
+        statusJob?.cancel()
 
         // Disconnect MQTT
         mqttManager.disconnect()
@@ -229,6 +234,9 @@ class DTGForegroundService : Service() {
                         // Add to EdgeAIInferenceService (manages 60-second window internally)
                         inferenceService.addSample(canData)
                         totalSamplesCollected++
+
+                        // Publish telemetry to MQTT (1Hz, QoS 0)
+                        publishTelemetry(canData)
 
                         // Detect immediate anomalies
                         detectImmediateAnomalies(canData)
@@ -393,20 +401,198 @@ class DTGForegroundService : Service() {
     }
 
     /**
+     * Publish real-time telemetry data to MQTT (1Hz, QoS 0)
+     */
+    private fun publishTelemetry(canData: CANData) {
+        try {
+            // Create JSON payload
+            val payload = JSONObject().apply {
+                put("timestamp", System.currentTimeMillis())
+                put("device_id", mqttManager.deviceId)
+                put("vehicle_speed", canData.vehicleSpeed)
+                put("engine_rpm", canData.engineRPM)
+                put("throttle_position", canData.throttlePosition)
+                put("fuel_level", canData.fuelLevel)
+                put("coolant_temp", canData.coolantTemp)
+                put("brake_position", canData.brakePosition)
+                put("acceleration_x", canData.accelerationX)
+                put("acceleration_y", canData.accelerationY)
+                put("acceleration_z", canData.accelerationZ)
+                put("steering_angle", canData.steeringAngle)
+
+                // GPS data (if available)
+                put("gps", JSONObject().apply {
+                    put("lat", 0.0)  // TODO: Get from GPS
+                    put("lon", 0.0)
+                    put("speed", canData.vehicleSpeed)
+                })
+            }.toString()
+
+            // Publish with QoS 0 (fire and forget - high frequency data)
+            val success = mqttManager.publishTelemetry(mqttManager.deviceId, payload)
+
+            if (!success) {
+                Log.v(TAG, "Telemetry queued for retry")
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error publishing telemetry", e)
+        }
+    }
+
+    /**
+     * Publish device status to MQTT (5min, QoS 1)
+     */
+    private fun publishStatus() {
+        try {
+            val uptime = System.currentTimeMillis() - dataCollectionStartTime
+
+            // Create JSON payload
+            val payload = JSONObject().apply {
+                put("timestamp", System.currentTimeMillis())
+                put("device_id", mqttManager.deviceId)
+                put("status", "ONLINE")
+                put("uptime_ms", uptime)
+                put("samples_collected", totalSamplesCollected)
+                put("inferences_run", totalInferencesRun)
+                put("mqtt_metrics", JSONObject().apply {
+                    val metrics = mqttManager.getMetrics()
+                    put("connected", metrics.isConnected)
+                    put("messages_sent", metrics.messagesSent)
+                    put("messages_failed", metrics.messagesFailed)
+                    put("messages_queued", metrics.messagesQueued)
+                    put("reconnect_count", metrics.reconnectCount)
+                })
+                put("inference_ready", inferenceService.isReady())
+                put("window_size", inferenceService.getSampleCount())
+            }.toString()
+
+            // Publish with QoS 1 (at least once delivery)
+            val success = mqttManager.publishStatus(mqttManager.deviceId, payload)
+
+            if (success) {
+                Log.i(TAG, "✅ Published device status to MQTT")
+            } else {
+                Log.w(TAG, "⚠️ Failed to publish status (queued for retry)")
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error publishing status", e)
+        }
+    }
+
+    /**
+     * Publish safety alert to MQTT (QoS 2 - critical)
+     */
+    private fun publishAlert(
+        alertType: String,
+        severity: String,
+        message: String,
+        canData: CANData
+    ) {
+        try {
+            // Create JSON payload
+            val payload = JSONObject().apply {
+                put("timestamp", System.currentTimeMillis())
+                put("device_id", mqttManager.deviceId)
+                put("alert_type", alertType)
+                put("severity", severity)
+                put("message", message)
+                put("vehicle_data", JSONObject().apply {
+                    put("speed", canData.vehicleSpeed)
+                    put("rpm", canData.engineRPM)
+                    put("throttle", canData.throttlePosition)
+                    put("brake", canData.brakePosition)
+                    put("coolant_temp", canData.coolantTemp)
+                    put("fuel_level", canData.fuelLevel)
+                })
+            }.toString()
+
+            // Publish with QoS 2 (exactly once delivery - critical alerts)
+            val success = mqttManager.publishAlert(mqttManager.deviceId, payload)
+
+            if (success) {
+                Log.w(TAG, "🚨 Published alert to MQTT: $alertType ($severity)")
+            } else {
+                Log.e(TAG, "❌ Failed to publish alert (queued for retry)")
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error publishing alert", e)
+        }
+    }
+
+    /**
+     * Start device status publisher (every 5 minutes)
+     */
+    private fun startStatusPublisher() {
+        statusJob = serviceScope.launch(Dispatchers.Default) {
+            Log.i(TAG, "Starting device status publisher (5min interval)...")
+
+            // Delay initial status by 10 seconds
+            delay(10000)
+
+            while (isActive && isRunning) {
+                val startTime = System.currentTimeMillis()
+
+                try {
+                    publishStatus()
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error in status publisher", e)
+                }
+
+                // Sleep until next status (5 minutes from start)
+                val elapsed = System.currentTimeMillis() - startTime
+                val sleepTime = 5 * 60 * 1000 - elapsed  // 5 minutes
+                if (sleepTime > 0) {
+                    delay(sleepTime)
+                }
+            }
+        }
+    }
+
+    /**
      * Detect immediate anomalies (real-time)
      */
     private fun detectImmediateAnomalies(canData: CANData) {
         if (canData.isHarshBraking()) {
             Log.w(TAG, "⚠️ Harsh braking detected!")
-            // Could trigger immediate alert
+            publishAlert(
+                alertType = "HARSH_BRAKING",
+                severity = "WARNING",
+                message = "Harsh braking detected: deceleration < -4 m/s²",
+                canData = canData
+            )
         }
 
         if (canData.isHarshAcceleration()) {
             Log.w(TAG, "⚠️ Harsh acceleration detected!")
+            publishAlert(
+                alertType = "HARSH_ACCELERATION",
+                severity = "WARNING",
+                message = "Harsh acceleration detected: acceleration > 3 m/s²",
+                canData = canData
+            )
         }
 
         if (canData.coolantTemp > 105) {
             Log.e(TAG, "🔥 Engine overheating! Temp: ${canData.coolantTemp}°C")
+            publishAlert(
+                alertType = "ENGINE_OVERHEATING",
+                severity = "CRITICAL",
+                message = "Engine overheating: ${canData.coolantTemp}°C (threshold: 105°C)",
+                canData = canData
+            )
+        }
+
+        if (canData.fuelLevel < 10.0f) {
+            Log.w(TAG, "⚠️ Low fuel: ${canData.fuelLevel}%")
+            publishAlert(
+                alertType = "LOW_FUEL",
+                severity = "INFO",
+                message = "Low fuel level: ${canData.fuelLevel}%",
+                canData = canData
+            )
         }
     }
 
