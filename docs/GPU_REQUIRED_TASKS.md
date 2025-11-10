@@ -156,6 +156,68 @@ python train_lightgbm.py \
 #   Accuracy: >90%
 ```
 
+#### 3.4 IBM Granite TTM-r2 (Tiny Time Mixer) ⭐ NEW
+**Time**: 30 minutes - 1 hour (setup + zero-shot test)
+**Target**: Fuel consumption prediction with pre-trained foundation model
+**Status**: ✅ **Scripts Ready** (setup_ttm_r2.py, test_ttm_integration.py)
+
+```bash
+# Step 1: Download and validate model from Hugging Face
+python setup_ttm_r2.py
+
+# Expected output:
+#   📥 Downloading ibm-granite/granite-timeseries-ttm-r2...
+#   ✅ Model downloaded to: ai-models/models/ttm-r2/
+#   📊 Model: ~1-10M parameters (4-40MB FP32)
+#   🧪 Zero-shot validation successful
+#   💾 Config saved: ai-models/models/ttm-r2/ttm_r2_config.json
+
+# Step 2: Run integration tests
+cd ../tests
+python test_ttm_integration.py -v
+
+# Expected: 8/8 tests passing
+#   ✅ Model parameters < 20M (edge-friendly)
+#   ✅ Input shape (1, 60, 10) validated
+#   ✅ Zero-shot inference working
+#   ⏱️ Latency benchmark (target <50ms after INT8)
+
+# Step 3: Few-shot fine-tuning (optional, for accuracy boost)
+cd ../training
+python train_ttm_r2.py \
+    --data ../../datasets/train.csv \
+    --pretrained ibm-granite/granite-timeseries-ttm-r2 \
+    --epochs 10 \
+    --learning-rate 0.0001 \
+    --few-shot 1000  # Use only 1000 samples
+
+# Expected output:
+#   models/ttm_r2_finetuned.pth (~10-15MB)
+#   R² Score: >0.85 (zero-shot) → >0.90 (fine-tuned)
+```
+
+**Why TTM-r2?**
+- ✅ **Pre-trained on time series** (NeurIPS 2024)
+- ✅ **Zero-shot capable** (works without training)
+- ✅ **Few-shot efficient** (1000 samples vs 28,000)
+- ✅ **Edge-optimized** (1-10M params, laptop-runnable)
+- ✅ **Apache 2.0 License**
+
+**Comparison with TCN**:
+| Metric | Custom TCN | IBM TTM-r2 |
+|--------|------------|------------|
+| Training Time | 2-4 hours | 30 min (few-shot) |
+| Data Required | 28,000 samples | 1,000 samples |
+| Model Size | 2-4MB (INT8) | 2-5MB (INT8) |
+| Accuracy | 85-90% | 85-95% |
+| Latency | 15-25ms | 5-15ms |
+
+**Next Steps**:
+1. Run `setup_ttm_r2.py` to download model
+2. Compare zero-shot vs TCN baseline
+3. Optional: Fine-tune with 1000 samples
+4. Quantize to INT8 (see Section 4)
+
 ---
 
 ### 4. Model Quantization
