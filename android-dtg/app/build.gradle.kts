@@ -105,6 +105,11 @@ dependencies {
     // Logging
     implementation("com.jakewharton.timber:timber:5.0.1")
 
+    // ONNX Runtime Mobile (for LightGBM behavior classification)
+    // Model: lightgbm_behavior.onnx (12.62 KB)
+    // Performance: 0.0119ms P95 latency, 99.54% accuracy
+    implementation("com.microsoft.onnxruntime:onnxruntime-android:1.17.0")
+
     // SNPE SDK (Qualcomm Snapdragon Neural Processing Engine)
     // Note: SNPE libraries must be manually added to libs/
     // Download from: https://softwarecenter.qualcomm.com/

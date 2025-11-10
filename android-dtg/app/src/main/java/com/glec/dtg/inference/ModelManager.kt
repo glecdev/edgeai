@@ -438,16 +438,31 @@ class ModelManager(private val context: Context) {
     }
 
     private fun loadLightGBMModel(file: File, metadata: ModelMetadata): LoadedModel {
-        // TODO: Implement LightGBM model loading
-        Log.d(TAG, "Loading LightGBM model: ${file.name}")
+        Log.d(TAG, "Loading LightGBM ONNX model: ${file.name}")
 
-        return LoadedModel(
-            name = metadata.name,
-            version = metadata.version,
-            runtime = RUNTIME_LIGHTGBM,
-            filePath = file.absolutePath,
-            handle = null  // Placeholder
-        )
+        try {
+            // Initialize ONNX Runtime engine
+            // Model file should be in assets/models/lightgbm_behavior.onnx
+            val assetPath = "models/${file.name}"
+            val engine = LightGBMONNXEngine(context, assetPath)
+
+            Log.i(TAG, "LightGBM ONNX engine initialized successfully")
+            Log.i(TAG, "  Model: ${metadata.fileName}")
+            Log.i(TAG, "  Version: ${metadata.version}")
+            Log.i(TAG, "  Expected performance: ${metadata.performance.avgLatency}ms P95")
+
+            return LoadedModel(
+                name = metadata.name,
+                version = metadata.version,
+                runtime = RUNTIME_LIGHTGBM,
+                filePath = file.absolutePath,
+                handle = engine  // Store ONNX Runtime engine
+            )
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to load LightGBM ONNX model", e)
+            throw RuntimeException("LightGBM model loading failed", e)
+        }
     }
 
     private fun updateModelMetadata(modelName: String, version: String, checksum: String) {
