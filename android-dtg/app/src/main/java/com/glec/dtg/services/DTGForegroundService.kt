@@ -381,9 +381,10 @@ class DTGForegroundService : Service() {
                 put("safety_score", result.safetyScore)
                 put("latency_ms", result.inferenceLatency)
 
-                // TODO: Add fuel efficiency and anomaly data when available
-                // put("fuel_efficiency", result.fuelEfficiencyPrediction)
-                // put("anomaly_score", result.anomalyScore)
+                // Multi-model AI results
+                put("fuel_efficiency", inferenceResult.fuelEfficiency)
+                put("anomaly_score", inferenceResult.anomalyScore)
+                put("is_anomaly", inferenceResult.isAnomaly)
             }.toString()
 
             // Publish with QoS 1 (at least once delivery)

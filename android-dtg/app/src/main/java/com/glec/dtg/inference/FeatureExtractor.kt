@@ -155,6 +155,35 @@ class FeatureExtractor(
         return sqrt(variance)
     }
 
+    /**
+     * Extract temporal sequence for TCN and LSTM-AE models
+     *
+     * Returns 60×10 matrix of temporal features:
+     * Features per timestep: [speed, rpm, throttle, fuel, coolant, brake, accel_x, accel_y, accel_z, steering]
+     *
+     * @return 60×10 temporal sequence, or empty array if window not ready
+     */
+    fun extractTemporalSequence(): Array<FloatArray> {
+        if (!isWindowReady()) {
+            return emptyArray()
+        }
+
+        return window.map { sample ->
+            floatArrayOf(
+                sample.vehicleSpeed,           // 0: Speed (km/h)
+                sample.engineRPM.toFloat(),    // 1: RPM
+                sample.throttlePosition,       // 2: Throttle (%)
+                sample.fuelLevel,              // 3: Fuel level (%)
+                sample.coolantTemp.toFloat(),  // 4: Coolant temp (°C)
+                sample.brakePosition,          // 5: Brake position (%)
+                sample.accelerationX,          // 6: Accel X (m/s²)
+                sample.accelerationY,          // 7: Accel Y (m/s²)
+                sample.accelerationZ,          // 8: Accel Z (m/s²)
+                sample.steeringAngle           // 9: Steering angle (degrees)
+            )
+        }.toTypedArray()
+    }
+
     companion object {
         /**
          * Feature vector dimension (must match LightGBM model input)
