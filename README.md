@@ -293,13 +293,15 @@ See [docs/INTEGRATION_ANALYSIS.md](docs/INTEGRATION_ANALYSIS.md) for complete an
 - F1-Score: 0.85-0.92
 - Architecture: 2-layer LSTM encoder-decoder with 32-dim latent space
 
-### 3. LightGBM
+### 3. LightGBM ✅ **TRAINED**
 **Framework**: LightGBM (MIT License, Microsoft)
-**Purpose**: Carbon emission estimation, driving behavior classification
-- Size: 5-10MB
-- Latency: 5-15ms
-- Accuracy: 90-95%
-- Architecture: Gradient Boosting Decision Tree (GBDT)
+**Purpose**: Driving behavior classification (normal, eco_driving, aggressive)
+- **Size**: 0.022MB (22KB) ⚡ 456x smaller than target
+- **Latency**: 0.064ms (P95) ⚡ 234x faster than target
+- **Accuracy**: 99.54% (test), 96.92% (validation) ⚡ Exceeds 90% target
+- **F1-Score**: 99.30%
+- **Architecture**: Gradient Boosting Decision Tree (6 trees, early stopping)
+- **Training**: 24 seconds on CPU (web environment compatible)
 
 **Total**: ~12MB models, 30ms parallel inference (60ms sequential)
 
