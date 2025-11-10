@@ -1,0 +1,42 @@
+# GLEC DTG - Coverage Configuration
+# Configuration for pytest-cov coverage reporting
+
+[run]
+source =
+    ai-models
+    fleet-integration
+    data-generation
+
+omit =
+    */tests/*
+    */test_*
+    */__pycache__/*
+    */venv/*
+    */env/*
+    */.venv/*
+    */build/*
+    */dist/*
+    */.pytest_cache/*
+    */setup.py
+
+[report]
+precision = 2
+show_missing = True
+skip_covered = False
+
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if __name__ == .__main__.:
+    raise AssertionError
+    raise NotImplementedError
+    if TYPE_CHECKING:
+    @abstract
+
+[html]
+directory = htmlcov
+title = GLEC DTG Edge AI - Test Coverage Report
+
+[json]
+output = coverage.json
+pretty_print = True

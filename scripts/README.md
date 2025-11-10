@@ -4,6 +4,102 @@ Code quality and automation tools for the GLEC DTG Edge AI SDK.
 
 ## Available Scripts
 
+### 🧪 run_all_tests.sh - Integrated Test Runner
+
+Run all test suites with coordinated reporting and quality gates.
+
+**Usage:**
+```bash
+./scripts/run_all_tests.sh
+```
+
+**Features:**
+- **Comprehensive**: Runs all test suites (synthetic data, AI models, production integration)
+- **Coordinated**: Sequential execution with aggregated results
+- **Colored output**: Clear pass/fail indicators
+- **Quality gates**: 95% pass rate requirement
+- **Performance metrics**: Throughput, latency, validation stats
+
+**Test Suites Included:**
+1. Synthetic Driving Simulator (14 tests)
+2. TCN Fuel Prediction Model
+3. LSTM-AE Anomaly Detection
+4. LightGBM Behavior Classification (28 tests)
+5. Physics-Based Validation (19 tests)
+6. Realtime Data Integration (8 tests)
+7. CAN Protocol Parser (18 tests)
+8. Multi-Model Integration (16 tests)
+
+**When to use:**
+- Before committing code
+- After making changes to critical modules
+- Daily development workflow
+- CI/CD pipeline entry point
+
+---
+
+### 📊 generate_coverage.sh - Coverage Report Generator
+
+Generate comprehensive test coverage reports with HTML, JSON, and terminal output.
+
+**Usage:**
+```bash
+./scripts/generate_coverage.sh
+```
+
+**Features:**
+- **Multi-format**: HTML (interactive), JSON (CI/CD), terminal (quick view)
+- **Module breakdown**: Per-module coverage statistics
+- **Low coverage detection**: Identifies files <80% coverage
+- **Quality gate**: Enforces ≥80% coverage target
+
+**Outputs:**
+- `htmlcov/index.html` - Interactive HTML report (open in browser)
+- `coverage.json` - Machine-readable JSON for automation
+- Terminal summary - Quick overview
+
+**When to use:**
+- After running tests
+- Before releases (verify coverage)
+- Weekly quality reviews
+- To identify untested code paths
+
+---
+
+### ✅ verify_environment.sh - Environment Verification
+
+Verify development environment prerequisites and configuration.
+
+**Usage:**
+```bash
+./scripts/verify_environment.sh
+```
+
+**Features:**
+- **System check**: OS, kernel, architecture
+- **Tool verification**: Python, pip, git, pytest
+- **Dependency audit**: Core libraries, AI/ML packages
+- **Code quality tools**: Black, isort, mypy, Bandit, Safety
+- **Project structure**: Validates directory layout
+- **Git config**: Branch, remote, commit status
+
+**Checks Performed:**
+1. Core development tools (Python 3, pip, git, pytest)
+2. Python dependencies (numpy, pandas, pytest-cov)
+3. AI/ML dependencies (onnxruntime, lightgbm, scikit-learn)
+4. Code quality tools (optional but recommended)
+5. Project directory structure
+6. Git repository configuration
+7. Test suite status
+
+**When to use:**
+- Initial project setup
+- After pulling changes
+- Troubleshooting build issues
+- Onboarding new developers
+
+---
+
 ### 🎨 format_code.sh - Code Formatter
 
 Automatically format Python code using Black and isort.
@@ -77,24 +173,56 @@ Scan for vulnerabilities using Bandit and Safety.
 
 ## Quick Start
 
+### Initial Setup
+
+Verify your environment is properly configured:
+
+```bash
+./scripts/verify_environment.sh
+```
+
+### Development Workflow
+
 Run all quality checks before committing:
 
 ```bash
-# 1. Format code
+# 1. Verify environment (first time only)
+./scripts/verify_environment.sh
+
+# 2. Run all tests
+./scripts/run_all_tests.sh
+
+# 3. Generate coverage report
+./scripts/generate_coverage.sh
+
+# 4. Format code
 ./scripts/format_code.sh
 
-# 2. Check types
+# 5. Check types
 ./scripts/type_check.sh
 
-# 3. Security scan
+# 6. Security scan
 ./scripts/security_scan.sh
 
-# 4. Run tests
-pytest tests/ -v --cov
-
-# 5. Commit if all pass
+# 7. Commit if all pass
 git add -A
 git commit -m "your message"
+git push
+```
+
+### Daily Development
+
+Quick checks during development:
+
+```bash
+# Run specific test file
+pytest tests/test_physics_validation.py -v
+
+# Quick format check
+./scripts/format_code.sh
+
+# Run all tests
+./scripts/run_all_tests.sh
 ```
 
 ## CI/CD Integration
@@ -102,15 +230,62 @@ git commit -m "your message"
 These scripts are designed to be used in GitHub Actions:
 
 ```yaml
-- name: Code Quality Checks
-  run: |
-    ./scripts/format_code.sh --check  # Fails if formatting needed
-    ./scripts/type_check.sh           # Fails on type errors
-    ./scripts/security_scan.sh        # Fails on vulnerabilities
-    pytest tests/ -v --cov
+name: CI Pipeline
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Verify environment
+        run: ./scripts/verify_environment.sh
+
+      - name: Run all tests
+        run: ./scripts/run_all_tests.sh
+
+      - name: Generate coverage
+        run: ./scripts/generate_coverage.sh
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.json
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Code formatting check
+        run: ./scripts/format_code.sh --check
+
+      - name: Type checking
+        run: ./scripts/type_check.sh
+
+      - name: Security scan
+        run: ./scripts/security_scan.sh
 ```
 
 ## Configuration
+
+### Coverage Configuration (.coveragerc)
+- Source: ai-models/, fleet-integration/, data-generation/
+- Omit: tests/, __pycache__/, venv/, build/
+- Target: ≥80% coverage
+- Output formats: HTML, JSON, terminal
+- Exclude lines: pragma: no cover, if __name__
 
 ### Black Configuration (.black)
 - Line length: 100 characters
