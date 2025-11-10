@@ -50,12 +50,20 @@ ENV/
 *.dlc
 *.bin
 
+# Exception: Allow small ONNX models in Android assets (< 15KB)
+# LightGBM behavior classification model: 12.62 KB
+!android-dtg/app/src/main/assets/models/*.onnx
+
 # Training artifacts
 mlruns/
 mlartifacts/
 logs/
 checkpoints/
 models/
+
+# Exception: Allow Android assets models directory
+!android-dtg/app/src/main/assets/models/
+
 *.log
 
 # DVC
