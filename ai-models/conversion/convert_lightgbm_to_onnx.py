@@ -117,13 +117,43 @@ def validate_onnx_output(
     ort_inputs = {ort_session.get_inputs()[0].name: test_data}
     ort_outputs = ort_session.run(None, ort_inputs)
 
+    # Debug: Check output structure
+    print(f"  ONNX outputs count: {len(ort_outputs)}")
+    for i, out in enumerate(ort_outputs):
+        if isinstance(out, np.ndarray):
+            print(f"    Output[{i}]: shape={out.shape}, dtype={out.dtype}")
+        else:
+            print(f"    Output[{i}]: type={type(out)}, len={len(out) if hasattr(out, '__len__') else 'N/A'}")
+
     # ONNX may return labels and probabilities
     # Get probability outputs
     if len(ort_outputs) == 2:
-        # (labels, probabilities)
-        onnx_output = ort_outputs[1]  # Probabilities
+        # Output[0] = labels, Output[1] = probabilities
+        labels = ort_outputs[0]
+        probs = ort_outputs[1]
+
+        # Convert probabilities from list to numpy array
+        if isinstance(probs, list):
+            # Each element in list is a dict {class_id: probability}
+            num_samples_onnx = len(probs)
+            # Infer num_classes from first sample
+            if isinstance(probs[0], dict):
+                num_classes_onnx = max(probs[0].keys()) + 1 if probs[0] else 3
+            else:
+                num_classes_onnx = 3  # Default
+            onnx_output = np.zeros((num_samples_onnx, num_classes_onnx), dtype=np.float32)
+
+            for i, prob_dict in enumerate(probs):
+                if isinstance(prob_dict, dict):
+                    for class_id, prob_value in prob_dict.items():
+                        onnx_output[i, class_id] = prob_value
+                else:
+                    # If it's already an array, use it directly
+                    onnx_output[i] = prob_dict
+        else:
+            onnx_output = np.array(probs)
     else:
-        onnx_output = ort_outputs[0]
+        onnx_output = np.array(ort_outputs[0])
 
     # Compare outputs
     if lgbm_output.shape != onnx_output.shape:

@@ -32,6 +32,10 @@ def convert_onnx_to_tensorflow(
     Returns:
         Path to TensorFlow SavedModel directory
     """
+    import sys
+    import subprocess
+    import shutil
+
     print("=" * 80)
     print("ONNX TO TENSORFLOW CONVERTER")
     print("=" * 80)
@@ -58,11 +62,9 @@ def convert_onnx_to_tensorflow(
     print(f"\n🔄 Converting ONNX → TensorFlow...")
     print(f"  This may take 1-3 minutes...")
 
-    # Use onnx2tf via command line for best compatibility
-    import subprocess
-
+    # Use onnx2tf via python -m for best compatibility
     cmd = [
-        "onnx2tf",
+        sys.executable, "-m", "onnx2tf",
         "-i", onnx_path,
         "-o", tf_output_dir,
         "-osd",  # Output SavedModel
@@ -88,8 +90,9 @@ def convert_onnx_to_tensorflow(
         print(f"❌ onnx2tf conversion failed:")
         print(e.stderr)
         sys.exit(1)
-    except FileNotFoundError:
-        print("❌ onnx2tf command not found. Install with: pip install onnx2tf")
+    except FileNotFoundError as e:
+        print(f"❌ Python executable not found: {e}")
+        print("Install onnx2tf with: pip install onnx2tf")
         sys.exit(1)
 
     return tf_output_dir
