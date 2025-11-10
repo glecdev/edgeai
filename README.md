@@ -163,7 +163,12 @@ edgeai/
 **Source**: `GLEC_DTG_INTEGRATED_v20.0.0/01_core_engine/realtime_inference/`
 
 ```python
-from ai_models.inference.realtime_integration import RealtimeDataIntegrator
+# Add ai-models to path (folder name has hyphen)
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent / "ai-models"))
+
+from inference.realtime_integration import RealtimeDataIntegrator
 
 integrator = RealtimeDataIntegrator()
 async for validated_data in integrator.process_stream(can_stream):
@@ -304,7 +309,12 @@ truckVoice.parseIntent("주행 가능 거리")     // Fuel range
 **Source**: `GLEC_DTG_INTEGRATED_v20.0.0/01_core_engine/physics_validation/`
 
 ```python
-from ai_models.validation.physics_validator import PhysicsValidator
+# Add ai-models to path (folder name has hyphen)
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent / "ai-models"))
+
+from validation.physics_validator import PhysicsValidator
 
 validator = PhysicsValidator(vehicle_type="truck")
 result = validator.validate(can_data, previous_data)

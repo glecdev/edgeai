@@ -369,9 +369,11 @@ class PhysicsValidator:
 if __name__ == '__main__':
     import sys
     import os
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
-    from ai_models.inference.realtime_integration import RealtimeCANData
     import time
+    # Add ai-models to path for import
+    ai_models_path = os.path.join(os.path.dirname(__file__), '..')
+    sys.path.insert(0, ai_models_path)
+    from inference.realtime_integration import RealtimeCANData
 
     validator = PhysicsValidator(vehicle_type="truck")
 

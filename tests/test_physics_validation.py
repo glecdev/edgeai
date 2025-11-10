@@ -9,10 +9,18 @@ Tests production-ported physics-based plausibility validation:
 - Sensor fault detection
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Add ai-models to path for import
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root / "ai-models"))
+
 import unittest
 import time
-from ai_models.validation.physics_validator import PhysicsValidator, ValidationResult
-from ai_models.inference.realtime_integration import RealtimeCANData
+from validation.physics_validator import PhysicsValidator, ValidationResult
+from inference.realtime_integration import RealtimeCANData
 
 
 class TestPhysicsValidator(unittest.TestCase):

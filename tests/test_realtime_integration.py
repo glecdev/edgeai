@@ -8,10 +8,18 @@ Tests production-ported realtime data pipeline:
 - >99% valid record rate (production SLA)
 """
 
+import sys
+import os
+from pathlib import Path
+
+# Add ai-models to path for import
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root / "ai-models"))
+
 import unittest
 import asyncio
 import time
-from ai_models.inference.realtime_integration import (
+from inference.realtime_integration import (
     RealtimeDataIntegrator,
     RealtimeCANData
 )
