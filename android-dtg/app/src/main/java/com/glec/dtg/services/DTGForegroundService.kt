@@ -18,7 +18,11 @@ import com.glec.dtg.models.CANData
 import com.glec.dtg.models.DrivingBehavior
 import com.glec.dtg.utils.CANMessageParser
 import com.glec.dtg.inference.EdgeAIInferenceService
+import com.glec.dtg.mqtt.MQTTManager
+import com.glec.dtg.mqtt.MQTTConfig
+import com.glec.dtg.mqtt.ConnectionCallback
 import kotlinx.coroutines.*
+import org.json.JSONObject
 import java.util.concurrent.ConcurrentLinkedQueue
 import kotlin.math.min
 
@@ -42,7 +46,7 @@ class DTGForegroundService : Service() {
 
     private lateinit var canReceiver: CANReceiver
     private lateinit var inferenceService: EdgeAIInferenceService
-    private lateinit var mqttClient: MQTTClientService
+    private lateinit var mqttManager: MQTTManager
 
     private var isRunning = false
     private var dataCollectionStartTime = 0L
@@ -63,10 +67,29 @@ class DTGForegroundService : Service() {
         // Initialize components
         canReceiver = CANReceiver(this)
         inferenceService = EdgeAIInferenceService(this)
-        mqttClient = MQTTClientService(this)
+
+        // Initialize MQTT Manager
+        val mqttConfig = MQTTConfig.createDefault("DTG-SN-12345")  // TODO: Load device ID from config
+        mqttManager = MQTTManager(this, mqttConfig)
+
+        // Set MQTT connection callback
+        mqttManager.setConnectionCallback(object : ConnectionCallback {
+            override fun onConnected() {
+                Log.i(TAG, "✅ MQTT connected to broker")
+            }
+
+            override fun onConnectionLost(cause: Throwable?) {
+                Log.w(TAG, "⚠️ MQTT connection lost", cause)
+            }
+
+            override fun onReconnecting() {
+                Log.i(TAG, "🔄 MQTT reconnecting...")
+            }
+        })
 
         Log.i(TAG, "Components initialized")
         Log.i(TAG, "  EdgeAIInferenceService: LightGBM behavior classification ready")
+        Log.i(TAG, "  MQTTManager: Fleet platform connectivity ready")
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -124,13 +147,8 @@ class DTGForegroundService : Service() {
             Log.i(TAG, "LightGBM ONNX model ready (12.62KB, 0.0119ms P95 latency)")
 
             // Connect to MQTT broker
-            try {
-                mqttClient.connect()
-                Log.i(TAG, "Connected to MQTT broker")
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to connect to MQTT broker", e)
-                // Continue without MQTT (offline mode)
-            }
+            mqttManager.connect()
+            Log.i(TAG, "MQTT connection initiated (async)")
 
             // Start CAN data collection
             startCANDataCollection()
@@ -165,7 +183,7 @@ class DTGForegroundService : Service() {
         inferenceJob?.cancel()
 
         // Disconnect MQTT
-        mqttClient.disconnect()
+        mqttManager.disconnect()
 
         // Close CAN receiver
         canReceiver.close()
@@ -271,9 +289,7 @@ class DTGForegroundService : Service() {
                             )
 
                             // Send to MQTT
-                            if (mqttClient.isConnected()) {
-                                mqttClient.publishInferenceResult(result)
-                            }
+                            publishToMQTT(result, inferenceResult)
 
                             // Broadcast via BLE
                             broadcastInferenceResult(result)
@@ -338,6 +354,42 @@ class DTGForegroundService : Service() {
         }
 
         return score.coerceIn(0, 100)
+    }
+
+    /**
+     * Publish inference result to MQTT broker
+     */
+    private fun publishToMQTT(
+        result: AIInferenceResult,
+        inferenceResult: com.glec.dtg.inference.InferenceResult
+    ) {
+        try {
+            // Create JSON payload
+            val payload = JSONObject().apply {
+                put("timestamp", result.timestamp)
+                put("device_id", mqttManager.deviceId)
+                put("behavior", result.behaviorClass.name)
+                put("confidence", inferenceResult.confidence)
+                put("safety_score", result.safetyScore)
+                put("latency_ms", result.inferenceLatency)
+
+                // TODO: Add fuel efficiency and anomaly data when available
+                // put("fuel_efficiency", result.fuelEfficiencyPrediction)
+                // put("anomaly_score", result.anomalyScore)
+            }.toString()
+
+            // Publish with QoS 1 (at least once delivery)
+            val success = mqttManager.publishInference(mqttManager.deviceId, payload)
+
+            if (success) {
+                Log.d(TAG, "✅ Published inference result to MQTT")
+            } else {
+                Log.w(TAG, "⚠️ Failed to publish to MQTT (queued for retry)")
+            }
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error publishing to MQTT", e)
+        }
     }
 
     /**
@@ -442,24 +494,5 @@ private class CANReceiver(private val context: Context) {
     fun readCANData(): CANData? {
         // TODO: Read from UART and parse CAN data
         return null
-    }
-}
-
-private class MQTTClientService(private val context: Context) {
-    fun connect() {
-        // TODO: Connect to MQTT broker
-    }
-
-    fun disconnect() {
-        // TODO: Disconnect from MQTT
-    }
-
-    fun isConnected(): Boolean {
-        // TODO: Check MQTT connection status
-        return false
-    }
-
-    fun publishInferenceResult(result: AIInferenceResult) {
-        // TODO: Publish to MQTT
     }
 }
