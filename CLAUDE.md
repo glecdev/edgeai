@@ -689,9 +689,90 @@ EdgeAIManager.registerSensorStatusListener(listener)
 
 ---
 
+## 🎤 Voice Edge Optimization Status (Phase 3-J) 📋
+
+**Status**: Analysis complete, implementation blocked (budget decision needed)
+**Conclusion**: 100% offline + open-source achievable, but exceeds 14MB budget by 10x
+
+### Current Voice Stack Issues
+
+**Architecture**:
+```
+[Porcupine Wake Word] → [Vosk STT] → [Intent Parsing] → [Google TTS]
+  (API key req.)         (82MB offline)   (local)          (cloud)
+```
+
+**Problems**:
+- ❌ Porcupine: Requires Picovoice API key (commercial license)
+- ❌ Google TTS: Cloud-dependent (network required for quality voices)
+- ⚠️ Vosk: 82MB (no optimization applied)
+- ✅ Only Vosk is fully open-source + offline
+
+### Recommended Stack (2025 Latest Models)
+
+| Component | Model | Size | License | Status |
+|-----------|-------|------|---------|--------|
+| **Wake Word** | openWakeWord | 0.42 MB | Apache 2.0 | ✅ Production-ready |
+| **STT** | Whisper Tiny INT8 (KR) | 60 MB | MIT | ✅ ENERZAi fine-tuned |
+| **TTS** | Kokoro-82M | 82 MB | Apache 2.0 | ✅ #1 TTS Arena |
+| **Total** | - | **142.42 MB** | Open-source | ⚠️ 10x over budget |
+
+**Key Improvements**:
+- openWakeWord: No API key, Home Assistant official
+- Whisper: CER 6.45% (vs. Whisper-Large 11.13%), 27% smaller than Vosk
+- Kokoro: Korean support, 24kHz quality, 100% offline
+
+### Critical Issue: Budget Exceeded
+
+**14MB AI Model Budget** (Core requirement)
+- Current: LightGBM 5.7MB + TCN/LSTM-AE ~6MB = **~12MB** ✅
+- Voice: +142MB = **154MB total** ❌ (1,000%+ over budget)
+
+**Resolution Options**:
+1. ⭐ **Option A (Recommended)**: Separate optional voice module
+   - Core DTG: 12MB (within budget)
+   - Voice add-on: 142MB (user choice, on-demand download)
+2. **Option B**: Aggressive INT4 quantization (61MB, still 4x over)
+3. **Option C**: Cloud-hybrid (violates offline-first principle)
+
+### 2025 Model Research Highlights
+
+**openWakeWord** (Home Assistant official):
+- 0.42MB per wake word, 102K parameters
+- Raspberry Pi 3 runs 15-20 models simultaneously
+- Custom training: 100k+ synthetic samples
+- Source: https://github.com/dscripka/openWakeWord
+
+**Whisper Tiny + ENERZAi Korean Fine-tuning**:
+- 13MB model outperforms 3GB Whisper-Large on Korean
+- INT8 quantization: 45% size reduction, 19% latency reduction
+- Sep 2025 research: 50K hours Korean training data
+- Source: https://medium.com/@enerzai/small-models-big-heat-5836ccd476dd
+
+**Kokoro-82M** (Jan 2025 #1 TTS ranking):
+- 82M parameters, 5 languages (EN, FR, JA, **KR**, ZH)
+- 10+ voicepacks, <200ms RTF on CPU
+- Apache 2.0 licensed (commercial use approved)
+- Source: https://github.com/hexgrad/kokoro
+
+### Implementation Roadmap (If Approved)
+
+**Timeline**: 7-10 days
+- **Week 1**: Replace Porcupine → openWakeWord, Vosk → Whisper, Google TTS → Kokoro
+- **Week 2**: Integration testing, performance optimization, documentation
+
+**Prerequisites**:
+- Stakeholder approval for Option A (separate module)
+- Budget allocation for 142MB voice models
+- Local Android Studio environment (implementation phase)
+
+**Detailed Documentation**: `docs/VOICE_EDGE_OPTIMIZATION_ANALYSIS.md` (1,300+ lines)
+
+---
+
 ## 📊 Current Project Status
 
-**Phase 3 Progress**: 90% Complete (5 of 9 sub-phases done)
+**Phase 3 Progress**: 52% Complete (5 of 9 sub-phases done, 2 in analysis)
 
 ### Completed ✅
 
@@ -715,11 +796,17 @@ EdgeAIManager.registerSensorStatusListener(listener)
   - Multi-sensor hub design
   - 7 sensor types supported
 
-### In Progress 📋
+### Analysis Complete 📋
 
 - **Phase 3-H**: Dashcam Integration (20%)
-  - Feasibility analysis complete
-  - Implementation pending
+  - Feasibility analysis complete (1,200+ lines)
+  - YOLOv5 Nano recommended (3.8MB)
+  - Implementation pending (2-4 weeks)
+
+- **Phase 3-J**: Voice Edge Optimization (50%)
+  - Analysis complete (1,300+ lines)
+  - 100% offline + open-source stack designed
+  - Implementation blocked (142MB vs 14MB budget)
 
 ### Pending ⏸️
 
@@ -729,7 +816,7 @@ EdgeAIManager.registerSensorStatusListener(listener)
 
 **Test Status**: 144/144 passing (100%)
 **Total Code**: 11,500+ lines
-**Total Documentation**: 9,500+ lines
+**Total Documentation**: 12,000+ lines (added 2,500+ for 3-J)
 
 ---
 
