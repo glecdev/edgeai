@@ -4,7 +4,7 @@
 # Experiment Tracking
 # ============================================
 mlflow:
-  tracking_uri: "http://localhost:5000"
+  tracking_uri: "file:./mlruns"
   experiment_name: "glec-dtg-edge-ai"
   artifact_location: "./mlartifacts"
 
@@ -16,9 +16,9 @@ dvc:
 # Dataset Configuration
 # ============================================
 dataset:
-  train_path: "../data-generation/datasets/train.csv"
-  val_path: "../data-generation/datasets/val.csv"
-  test_path: "../data-generation/datasets/test.csv"
+  train_path: "../../datasets/train.csv"  # From ai-models/training/ directory
+  val_path: "../../datasets/val.csv"
+  test_path: "../../datasets/test.csv"
   split_ratios: [0.7, 0.15, 0.15]  # train, val, test
 
   # Data preprocessing
@@ -28,13 +28,12 @@ dataset:
     - engine_rpm
     - throttle_position
     - brake_pressure
-    - fuel_level
     - coolant_temp
+    - fuel_level
     - acceleration_x
-    - acceleration_y
-    - steering_angle
-    - gps_lat
-    - gps_lon
+    - latitude
+    - longitude
+    - altitude
 
   target_features:
     - fuel_consumption
@@ -45,7 +44,7 @@ dataset:
 # ============================================
 tcn:
   model_name: "tcn_fuel_prediction"
-  input_dim: 10  # Number of input features
+  input_dim: 10  # Number of input features (vehicle_speed, engine_rpm, throttle, brake, coolant, fuel, accel_x, lat, lon, alt)
   output_dim: 1  # Fuel consumption prediction
   num_channels: [64, 128, 256]  # Channel sizes for each layer
   kernel_size: 3
@@ -99,22 +98,26 @@ lstm_ae:
 lightgbm:
   model_name: "lightgbm_behavior_classification"
   task: "multiclass"
-  num_classes: 5  # normal, eco, harsh_braking, harsh_accel, anomaly
+  num_classes: 3  # normal, eco_driving, aggressive
 
   # LightGBM parameters
   params:
     objective: "multiclass"
     metric: "multi_logloss"
-    num_leaves: 31
-    learning_rate: 0.05
+    num_leaves: 127  # Increased for better capacity
+    learning_rate: 0.01  # Lower learning rate for better convergence
     feature_fraction: 0.9
     bagging_fraction: 0.8
     bagging_freq: 5
+    max_depth: 10  # Increased depth
+    min_data_in_leaf: 20  # Prevent overfitting
+    lambda_l1: 0.1  # L1 regularization
+    lambda_l2: 0.1  # L2 regularization
     verbose: -1
-    num_iterations: 100
+    num_iterations: 500  # Increased iterations
 
   training:
-    early_stopping_rounds: 10
+    early_stopping_rounds: 50  # More patience for convergence
 
   targets:
     size_mb: 10
