@@ -1,0 +1,156 @@
+{
+  "cpu": [
+    {
+      "category": "vehicle_status",
+      "query": "차량 상태를 알려줘",
+      "response": "현재 화물차 운전자를 돕는 AI 어시스턴트입니다. 적재 중량은 5200kg, 타이어 압력은 220kPa, 엔진 온",
+      "latency_ms": 1611.9587421417236,
+      "tokens": 50,
+      "tokens_per_sec": 31.01816361228183,
+      "device": "CPU"
+    },
+    {
+      "category": "cargo_info",
+      "query": "적재 정보 확인해줘",
+      "response": "화물차 운전자의 주요 주제와 관련된 정보를 제공하는 AI 어시스턴트입니다. 해당 화물차의 적재 정보를 확인할 수 있습니다. 적재량은 5200kg",
+      "latency_ms": 1450.237512588501,
+      "tokens": 50,
+      "tokens_per_sec": 34.47711120832612,
+      "device": "CPU"
+    },
+    {
+      "category": "fuel_efficiency",
+      "query": "연비가 어때?",
+      "response": "현재는 6.8km/L입니다. 목표는 7.5km/L입니다. 연비가 저하되었으나, 날씨 등으로 인한 변화가 가능합니다. 다시 연비를 조정하면 더",
+      "latency_ms": 1565.002679824829,
+      "tokens": 50,
+      "tokens_per_sec": 31.948827081622955,
+      "device": "CPU"
+    },
+    {
+      "category": "tire_pressure",
+      "query": "타이어 압력 상태는?",
+      "response": "정상 범위 내에서의 220kPa입니다. 현재는 정상 상태입니다. 압력 조절은 필요하시면 가능합니다. 100자 이내로 대답해주세요.",
+      "latency_ms": 1531.998634338379,
+      "tokens": 49,
+      "tokens_per_sec": 31.98436271528501,
+      "device": "CPU"
+    },
+    {
+      "category": "safety_warning",
+      "query": "안전 경고가 있어?",
+      "response": "안전 경고가 없고, DPF 상태: 양호, 브레이크: 정상입니다. 안전을 위해 업무를 지속하고 있습니다.",
+      "latency_ms": 1367.0005798339844,
+      "tokens": 40,
+      "tokens_per_sec": 29.261143404092635,
+      "device": "CPU"
+    },
+    {
+      "category": "driving_behavior",
+      "query": "내 운전 습관은 어때?",
+      "response": "내 운전 스타일은 ECO_DRIVING (92% 신뢰도)이며, 급가속 0회, 급감속 1회, 공회전 15분을 사용합니다.",
+      "latency_ms": 1437.171220779419,
+      "tokens": 50,
+      "tokens_per_sec": 34.790565854000036,
+      "device": "CPU"
+    },
+    {
+      "category": "engine_temp",
+      "query": "엔진 온도 괜찮아?",
+      "response": "온도가 정상 범위 내에서 작동하는 상태라서는 문제가 없습니다. 하지만 에너지가 소비되는 데는 높은 온도를 유지하기 위해서는 최대한 높",
+      "latency_ms": 1480.940341949463,
+      "tokens": 51,
+      "tokens_per_sec": 34.437578986379165,
+      "device": "CPU"
+    },
+    {
+      "category": "dpf_status",
+      "query": "DPF 상태 알려줘",
+      "response": "현재 상태는 충전율이 45%, 재생 필요성은 '이오'이고, 마지막 재생 시간은 3일 전입니다.",
+      "latency_ms": 1015.2091979980469,
+      "tokens": 35,
+      "tokens_per_sec": 34.475652967899265,
+      "device": "CPU"
+    }
+  ],
+  "gpu": [
+    {
+      "category": "vehicle_status",
+      "query": "차량 상태를 알려줘",
+      "response": "현재 화물차 운전자를 돕는 AI 어시스턴트입니다. 적재 중량은 5200kg, 타이어 압력은 220kPa, 엔진 온",
+      "latency_ms": 1556.001901626587,
+      "tokens": 50,
+      "tokens_per_sec": 32.13363682122229,
+      "device": "GPU"
+    },
+    {
+      "category": "cargo_info",
+      "query": "적재 정보 확인해줘",
+      "response": "화물차 운전자의 주요 주제와 관련된 정보를 제공하는 AI 어시스턴트입니다. 해당 화물차의 적재 정보를 확인할 수 있습니다. 적재량은 5200kg",
+      "latency_ms": 1429.999828338623,
+      "tokens": 50,
+      "tokens_per_sec": 34.965039162340396,
+      "device": "GPU"
+    },
+    {
+      "category": "fuel_efficiency",
+      "query": "연비가 어때?",
+      "response": "현재는 6.8km/L입니다. 목표는 7.5km/L입니다. 연비가 저하되었으나, 날씨 등으로 인한 변화가 가능합니다. 다시 연비를 조정하면 더",
+      "latency_ms": 1517.9998874664307,
+      "tokens": 50,
+      "tokens_per_sec": 32.93807885812884,
+      "device": "GPU"
+    },
+    {
+      "category": "tire_pressure",
+      "query": "타이어 압력 상태는?",
+      "response": "정상 범위 내에서의 220kPa입니다. 현재는 정상 상태입니다. 압력 조절은 필요하시면 가능합니다. 100자 이내로 대답해주세요.",
+      "latency_ms": 1586.9994163513184,
+      "tokens": 49,
+      "tokens_per_sec": 30.875877769795434,
+      "device": "GPU"
+    },
+    {
+      "category": "safety_warning",
+      "query": "안전 경고가 있어?",
+      "response": "안전 경고가 없고, DPF 상태: 양호, 브레이크: 정상입니다. 안전을 위해 업무를 지속하고 있습니다.",
+      "latency_ms": 1142.9989337921143,
+      "tokens": 40,
+      "tokens_per_sec": 34.99565819129198,
+      "device": "GPU"
+    },
+    {
+      "category": "driving_behavior",
+      "query": "내 운전 습관은 어때?",
+      "response": "내 운전 스타일은 ECO_DRIVING (92% 신뢰도)이며, 급가속 0회, 급감속 1회, 공회전 15분을 사용합니다.",
+      "latency_ms": 1504.0013790130615,
+      "tokens": 50,
+      "tokens_per_sec": 33.244650369144225,
+      "device": "GPU"
+    },
+    {
+      "category": "engine_temp",
+      "query": "엔진 온도 괜찮아?",
+      "response": "온도가 정상 범위 내에서 작동하는 상태라서는 문제가 없습니다. 하지만 에너지가 소비되는 데는 높은 온도를 유지하기 위해서는 최대한 높",
+      "latency_ms": 1541.0001277923584,
+      "tokens": 51,
+      "tokens_per_sec": 33.095389857665204,
+      "device": "GPU"
+    },
+    {
+      "category": "dpf_status",
+      "query": "DPF 상태 알려줘",
+      "response": "현재 상태는 충전율이 45%, 재생 필요성은 '이오'이고, 마지막 재생 시간은 3일 전입니다.",
+      "latency_ms": 1097.001552581787,
+      "tokens": 35,
+      "tokens_per_sec": 31.905150833768367,
+      "device": "GPU"
+    }
+  ],
+  "timestamp": "2025-11-26T00:10:17.108265",
+  "model": "d:\\edgeai\\models\\qwen2.5-0.5b-instruct-q4_k_m.gguf",
+  "summary": {
+    "cpu_avg_latency_ms": 1432.4398636817932,
+    "gpu_avg_latency_ms": 1422.000378370285
+  }
+}

@@ -1,0 +1,135 @@
+name: Android CI
+
+on:
+  push:
+    branches: [ main, develop, 'claude/*' ]
+    paths:
+      - 'android-dtg/**'
+      - '.github/workflows/android-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'android-dtg/**'
+
+env:
+  JAVA_VERSION: '17'
+  ANDROID_COMPILE_SDK: '34'
+  ANDROID_BUILD_TOOLS: '34.0.0'
+  ANDROID_SDK_TOOLS: '10406996'
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x android-dtg/gradlew
+
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Run Unit Tests
+      run: |
+        cd android-dtg
+        ./gradlew testDebugUnitTest --stacktrace
+
+    - name: Upload Test Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: android-dtg/app/build/reports/tests/testDebugUnitTest/
+
+    - name: Build Debug APK
+      run: |
+        cd android-dtg
+        ./gradlew assembleDebug --stacktrace
+
+    - name: Upload Debug APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: app-debug
+        path: android-dtg/app/build/outputs/apk/debug/app-debug.apk
+
+  lint:
+    name: Lint Check
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK
+      uses: actions/setup-java@v4
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x android-dtg/gradlew
+
+    - name: Run Lint
+      run: |
+        cd android-dtg
+        ./gradlew lintDebug --stacktrace
+
+    - name: Upload Lint Results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lint-results
+        path: android-dtg/app/build/reports/lint-results-debug.html
+
+  spec-validation:
+    name: Spec Validation
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Install dependencies
+      run: |
+        pip install pyyaml
+
+    - name: Run Spec Validation
+      run: |
+        cd specs
+        python validate_spec.py
+
+    - name: Upload Validation Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: spec-validation
+        path: specs/validation_reports/

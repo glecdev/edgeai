@@ -1,0 +1,355 @@
+{
+  "demoId": "ultimate-ces-demo-150s",
+  "title": "GLEC DTG AI Ultimate CES Demo",
+  "description": "2.5-minute comprehensive demo showcasing all AI capabilities",
+  "duration": 150,
+  "normalDrivingSeconds": 80,
+  "eventSeconds": 70,
+  "normalToEventRatio": "53% / 47%",
+
+  "timeline": [
+    {
+      "timestamp": 0,
+      "comment": "=== ACT 1: 정상 주행 → 급가속 → 과속 (0:00-0:30) ===",
+      "vehicleSpeed": 60,
+      "engineRPM": 1800,
+      "accelerationX": 0.0,
+      "safetyScore": 100,
+      "fuelLevel": 85,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 3,
+      "comment": "Normal driving continues",
+      "vehicleSpeed": 65,
+      "engineRPM": 1900,
+      "accelerationX": 0.2,
+      "safetyScore": 100,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 8,
+      "comment": "EVENT: 급가속 감지",
+      "vehicleSpeed": 90,
+      "engineRPM": 2200,
+      "accelerationX": 3.8,
+      "safetyScore": 85,
+      "vehicleColor": "#FFD700",
+      "event": {
+        "type": "harsh_acceleration",
+        "alert": {
+          "id": "alert_harsh_accel_1",
+          "title": "⚠️ 급가속 감지",
+          "message": "급가속이 감지되었습니다. 연비 효율이 저하됩니다",
+          "voiceAlert": "급가속이 감지되었습니다",
+          "severity": "medium",
+          "autoDismissSeconds": 5,
+          "icon": "warning"
+        }
+      }
+    },
+    {
+      "timestamp": 13,
+      "comment": "Acceleration event ends (auto-dismiss complete)",
+      "vehicleSpeed": 95,
+      "engineRPM": 2300,
+      "accelerationX": 0.5,
+      "safetyScore": 90,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 18,
+      "comment": "EVENT: 과속 감지",
+      "vehicleSpeed": 115,
+      "engineRPM": 2400,
+      "accelerationX": 0.3,
+      "safetyScore": 75,
+      "vehicleColor": "#FFD700",
+      "event": {
+        "type": "speeding",
+        "alert": {
+          "id": "alert_speeding_1",
+          "title": "🚨 과속 경고",
+          "message": "제한속도를 15km/h 초과했습니다",
+          "voiceAlert": "과속이 감지되었습니다. 속도를 줄여주세요",
+          "severity": "high",
+          "autoDismissSeconds": 5,
+          "icon": "danger"
+        }
+      }
+    },
+    {
+      "timestamp": 23,
+      "comment": "Speeding event ends (auto-dismiss complete)",
+      "vehicleSpeed": 100,
+      "engineRPM": 2200,
+      "accelerationX": -0.5,
+      "safetyScore": 80,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 30,
+      "comment": "=== ACT 2: 연비 분석 → AI 대화 (0:30-1:00) ===",
+      "vehicleSpeed": 80,
+      "engineRPM": 2000,
+      "accelerationX": 0.0,
+      "safetyScore": 85,
+      "fuelLevel": 82,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 35,
+      "comment": "Normal driving",
+      "vehicleSpeed": 75,
+      "engineRPM": 1950,
+      "accelerationX": -0.2,
+      "safetyScore": 85,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 40,
+      "comment": "EVENT: 연비 효율 분석",
+      "vehicleSpeed": 70,
+      "engineRPM": 1900,
+      "accelerationX": 0.0,
+      "safetyScore": 90,
+      "fuelConsumption": 25.5,
+      "vehicleColor": "#FFD700",
+      "event": {
+        "type": "fuel_efficiency",
+        "alert": {
+          "id": "alert_fuel_1",
+          "title": "📊 연비 분석",
+          "message": "현재 연비: 12.5km/L (평균 대비 +15%)",
+          "voiceAlert": "현재 연비가 우수합니다. 평균 대비 15% 향상되었습니다",
+          "severity": "low",
+          "autoDismissSeconds": 5,
+          "icon": "success"
+        },
+        "voiceConversation": {
+          "query": "운전자: 연비 개선 방법은?",
+          "response": "AI: 현재 속도 70km/h 유지하시면 최적 연비입니다. 급가속 3회 감소로 15% 개선되었습니다"
+        }
+      }
+    },
+    {
+      "timestamp": 50,
+      "comment": "Normal driving continues",
+      "vehicleSpeed": 70,
+      "engineRPM": 1900,
+      "accelerationX": 0.0,
+      "safetyScore": 92,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 60,
+      "comment": "=== ACT 3: 졸음 운전 → 휴게소 안내 (1:00-1:30) ===",
+      "vehicleSpeed": 85,
+      "engineRPM": 2050,
+      "accelerationX": 0.1,
+      "safetyScore": 92,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 65,
+      "comment": "EVENT: 졸음 운전 감지",
+      "vehicleSpeed": 85,
+      "engineRPM": 2050,
+      "accelerationX": 0.0,
+      "safetyScore": 65,
+      "vehicleColor": "#FF5252",
+      "event": {
+        "type": "drowsy_driving",
+        "alert": {
+          "id": "alert_drowsy_1",
+          "title": "😴 졸음 운전 감지",
+          "message": "졸음 운전이 감지되었습니다. 즉시 휴식을 취하세요",
+          "voiceAlert": "졸음 운전이 감지되었습니다. 가까운 휴게소에서 휴식하세요",
+          "severity": "critical",
+          "autoDismissSeconds": 5,
+          "icon": "danger"
+        }
+      }
+    },
+    {
+      "timestamp": 70,
+      "comment": "Drowsy alert ends (auto-dismiss complete)",
+      "vehicleSpeed": 80,
+      "engineRPM": 2000,
+      "accelerationX": -0.3,
+      "safetyScore": 70,
+      "vehicleColor": "#FFD700"
+    },
+    {
+      "timestamp": 75,
+      "comment": "EVENT: 휴게소 안내",
+      "vehicleSpeed": 70,
+      "engineRPM": 1900,
+      "accelerationX": -0.5,
+      "safetyScore": 75,
+      "vehicleColor": "#00FF00",
+      "event": {
+        "type": "rest_area_guidance",
+        "alert": {
+          "id": "alert_rest_1",
+          "title": "🅿️ 휴게소 안내",
+          "message": "2km 전방 휴게소에서 20분 휴식 권장",
+          "voiceAlert": "2킬로미터 전방 휴게소에서 20분간 휴식하시기 바랍니다",
+          "severity": "medium",
+          "autoDismissSeconds": 5,
+          "icon": "info"
+        },
+        "voiceConversation": {
+          "query": "운전자: 휴게소 위치는?",
+          "response": "AI: 2km 전방 서울방향 휴게소입니다. 주차 공간 충분합니다"
+        }
+      }
+    },
+    {
+      "timestamp": 85,
+      "comment": "Normal driving after rest guidance",
+      "vehicleSpeed": 65,
+      "engineRPM": 1850,
+      "accelerationX": 0.0,
+      "safetyScore": 80,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 90,
+      "comment": "=== ACT 4: 타이어 압력 → 3D 뷰어 (1:30-2:00) ===",
+      "vehicleSpeed": 75,
+      "engineRPM": 1950,
+      "accelerationX": 0.2,
+      "safetyScore": 85,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 95,
+      "comment": "EVENT: 타이어 압력 경고",
+      "vehicleSpeed": 75,
+      "engineRPM": 1950,
+      "accelerationX": 0.0,
+      "safetyScore": 80,
+      "tirePressureFrontLeft": 28.5,
+      "vehicleColor": "#FFD700",
+      "event": {
+        "type": "tire_pressure",
+        "alert": {
+          "id": "alert_tire_1",
+          "title": "⚠️ 타이어 압력 부족",
+          "message": "좌측 전방 타이어 압력 28.5 PSI (권장: 32 PSI)",
+          "voiceAlert": "좌측 전방 타이어 압력이 부족합니다. 휴게소에서 점검하세요",
+          "severity": "medium",
+          "autoDismissSeconds": 5,
+          "icon": "maintenance"
+        },
+        "3dViewer": {
+          "highlightPart": "frontLeftTire",
+          "color": "#FFD700",
+          "animation": "pulse"
+        }
+      }
+    },
+    {
+      "timestamp": 105,
+      "comment": "3D viewer demonstration continues",
+      "vehicleSpeed": 70,
+      "engineRPM": 1900,
+      "accelerationX": -0.2,
+      "safetyScore": 85,
+      "vehicleColor": "#00FF00",
+      "event": {
+        "type": "3d_demo",
+        "3dViewer": {
+          "cameraAngle": "rotate360",
+          "duration": 10,
+          "highlightPart": "allTires",
+          "color": "#00FF00"
+        }
+      }
+    },
+    {
+      "timestamp": 120,
+      "comment": "=== ACT 5: 종합 요약 → 마무리 (2:00-2:30) ===",
+      "vehicleSpeed": 80,
+      "engineRPM": 2000,
+      "accelerationX": 0.0,
+      "safetyScore": 88,
+      "fuelLevel": 78,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 125,
+      "comment": "Normal driving",
+      "vehicleSpeed": 75,
+      "engineRPM": 1950,
+      "accelerationX": -0.1,
+      "safetyScore": 90,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 135,
+      "comment": "EVENT: 주행 종합 요약",
+      "vehicleSpeed": 70,
+      "engineRPM": 1900,
+      "accelerationX": 0.0,
+      "safetyScore": 92,
+      "vehicleColor": "#00FF00",
+      "event": {
+        "type": "trip_summary",
+        "alert": {
+          "id": "alert_summary_1",
+          "title": "✅ 주행 요약",
+          "message": "총 주행 35km | 평균 연비 12.3km/L | 안전점수 88/100",
+          "voiceAlert": "주행이 완료되었습니다. 총 35킬로미터 주행, 평균 연비 12.3, 안전점수 88점입니다",
+          "severity": "low",
+          "autoDismissSeconds": 5,
+          "icon": "success"
+        },
+        "voiceConversation": {
+          "query": "운전자: 오늘 주행 평가는?",
+          "response": "AI: 전반적으로 안전한 주행이었습니다. 급가속 1회, 과속 1회 개선하시면 완벽합니다"
+        }
+      }
+    },
+    {
+      "timestamp": 145,
+      "comment": "Final normal driving",
+      "vehicleSpeed": 60,
+      "engineRPM": 1800,
+      "accelerationX": -0.5,
+      "safetyScore": 95,
+      "vehicleColor": "#00FF00"
+    },
+    {
+      "timestamp": 150,
+      "comment": "Demo end - loop restart",
+      "vehicleSpeed": 0,
+      "engineRPM": 800,
+      "accelerationX": 0.0,
+      "safetyScore": 95,
+      "fuelLevel": 77,
+      "vehicleColor": "#00FF00",
+      "event": {
+        "type": "demo_end",
+        "action": "loop_restart"
+      }
+    }
+  ],
+
+  "statistics": {
+    "totalEvents": 9,
+    "normalDrivingSegments": 8,
+    "eventSegments": 9,
+    "normalDurationPercent": 53,
+    "eventDurationPercent": 47,
+    "alertTypes": {
+      "safety": 3,
+      "carbon": 1,
+      "efficiency": 2,
+      "maintenance": 1,
+      "health": 1,
+      "summary": 1
+    }
+  }
+}

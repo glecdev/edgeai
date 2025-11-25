@@ -1,0 +1,693 @@
+{
+  "metadata": {
+    "name": "Logistics-Specific AI Evaluation Test Cases",
+    "version": "1.0",
+    "date": "2024-11-16",
+    "description": "Comprehensive test cases for evaluating truck logistics AI models",
+    "categories": [
+      "Vehicle Diagnostics",
+      "Fuel Efficiency",
+      "Driver Safety",
+      "Load Management",
+      "Route Optimization",
+      "Regulatory Compliance",
+      "Maintenance Prediction",
+      "Emergency Response"
+    ],
+    "total_cases": 100
+  },
+  "test_cases": [
+    {
+      "id": "TC001",
+      "category": "Vehicle Diagnostics",
+      "difficulty": "easy",
+      "scenario": {
+        "vehicle_speed": 80,
+        "engine_rpm": 2000,
+        "coolant_temp": 95,
+        "fuel_level": 65,
+        "brake_position": 0,
+        "accelerator_position": 45,
+        "dpf_status": "normal",
+        "oil_pressure": 3.5,
+        "timestamp": "2024-11-16T09:30:00Z"
+      },
+      "query": "현재 차량 상태를 종합적으로 분석해주세요.",
+      "expected_response_elements": [
+        "정상 주행 상태",
+        "엔진 온도 정상 범위",
+        "연료 충분",
+        "이상 없음"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": false
+      }
+    },
+    {
+      "id": "TC002",
+      "category": "Vehicle Diagnostics",
+      "difficulty": "medium",
+      "scenario": {
+        "vehicle_speed": 0,
+        "engine_rpm": 800,
+        "coolant_temp": 105,
+        "fuel_level": 15,
+        "brake_position": 100,
+        "accelerator_position": 0,
+        "dpf_status": "regenerating",
+        "oil_pressure": 3.2,
+        "timestamp": "2024-11-16T14:20:00Z"
+      },
+      "query": "냉각수 온도가 높은데 괜찮을까요?",
+      "expected_response_elements": [
+        "105도는 높은 편",
+        "DPF 재생 중이어서 온도 상승",
+        "정차 중이므로 냉각 효율 낮음",
+        "주의 필요",
+        "110도 이상 시 조치 필요"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true
+      }
+    },
+    {
+      "id": "TC003",
+      "category": "Fuel Efficiency",
+      "difficulty": "easy",
+      "scenario": {
+        "vehicle_speed": 90,
+        "engine_rpm": 1800,
+        "maf": 12.5,
+        "fuel_level": 80,
+        "load_weight": 5000,
+        "route_gradient": 0,
+        "timestamp": "2024-11-16T10:00:00Z"
+      },
+      "query": "연비를 개선하려면 어떻게 해야 하나요?",
+      "expected_response_elements": [
+        "현재 속도 90km/h는 적절",
+        "RPM 1800은 경제 구간",
+        "급가속 급감속 피하기",
+        "적정 속도 유지",
+        "타이어 공기압 점검"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true
+      }
+    },
+    {
+      "id": "TC004",
+      "category": "Fuel Efficiency",
+      "difficulty": "hard",
+      "scenario": {
+        "vehicle_speed": 110,
+        "engine_rpm": 2400,
+        "maf": 18.3,
+        "fuel_level": 25,
+        "load_weight": 12000,
+        "route_gradient": 5,
+        "trip_distance_remaining": 150,
+        "timestamp": "2024-11-16T16:45:00Z"
+      },
+      "query": "현재 연료로 목적지까지 도착할 수 있을까요? 연비를 최대한 절약하는 방법은?",
+      "expected_response_elements": [
+        "연료 25% 남음",
+        "150km 주행 필요",
+        "과적재 상태 (12톤)",
+        "고속 주행 (110km/h) 연비 불리",
+        "오르막길 5도로 추가 연료 소모",
+        "속도 80-90km/h로 감속 권장",
+        "급가속 금지",
+        "연료 부족 위험 있음",
+        "중간 주유 고려"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "contextual_reasoning": true
+      }
+    },
+    {
+      "id": "TC005",
+      "category": "Driver Safety",
+      "difficulty": "medium",
+      "scenario": {
+        "vehicle_speed": 95,
+        "acceleration_x": -4.5,
+        "brake_position": 85,
+        "driver_fatigue_level": 3,
+        "continuous_driving_time": 180,
+        "weather": "rain",
+        "timestamp": "2024-11-16T22:30:00Z"
+      },
+      "query": "급제동이 감지되었습니다. 위험한 상황인가요?",
+      "expected_response_elements": [
+        "급제동 감지 (-4.5 m/s²)",
+        "비 오는 날씨로 제동거리 증가",
+        "3시간 연속 운전으로 피로도 높음",
+        "야간 운전 (22:30) 주의 필요",
+        "차간 거리 확보",
+        "속도 감속 권장",
+        "휴게소 휴식 권장"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "safety_awareness": true
+      }
+    },
+    {
+      "id": "TC006",
+      "category": "Driver Safety",
+      "difficulty": "hard",
+      "scenario": {
+        "vehicle_speed": 105,
+        "acceleration_x": 0.2,
+        "brake_position": 5,
+        "driver_fatigue_level": 4,
+        "continuous_driving_time": 240,
+        "lane_departure_count": 3,
+        "harsh_braking_count": 2,
+        "weather": "fog",
+        "visibility": "low",
+        "timestamp": "2024-11-16T03:15:00Z"
+      },
+      "query": "안전 운전 점수를 분석하고 개선 방법을 알려주세요.",
+      "expected_response_elements": [
+        "4시간 연속 운전 - 법규 위반 (최대 4시간)",
+        "피로도 레벨 4 - 매우 높음",
+        "차선 이탈 3회 - 졸음 징후",
+        "급제동 2회 - 집중력 저하",
+        "새벽 3시 운전 - 생체리듬 최저",
+        "안개로 시야 불량",
+        "과속 (105km/h)",
+        "즉시 휴게소 정차 권장",
+        "최소 30분 휴식 필요",
+        "법적 의무 준수 필요"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "safety_awareness": true,
+        "regulatory_knowledge": true
+      }
+    },
+    {
+      "id": "TC007",
+      "category": "Load Management",
+      "difficulty": "easy",
+      "scenario": {
+        "load_weight": 8000,
+        "max_load_capacity": 10000,
+        "axle_weight_front": 3500,
+        "axle_weight_rear": 4500,
+        "center_of_gravity_x": 0,
+        "center_of_gravity_y": 0.8,
+        "timestamp": "2024-11-16T11:00:00Z"
+      },
+      "query": "현재 적재 상태가 안전한가요?",
+      "expected_response_elements": [
+        "총 적재 8톤",
+        "최대 적재량 10톤",
+        "여유 2톤 (20%)",
+        "전후 무게 배분 균형 양호",
+        "무게중심 안정",
+        "안전한 적재 상태"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": false
+      }
+    },
+    {
+      "id": "TC008",
+      "category": "Load Management",
+      "difficulty": "hard",
+      "scenario": {
+        "load_weight": 11500,
+        "max_load_capacity": 10000,
+        "axle_weight_front": 4000,
+        "axle_weight_rear": 7500,
+        "center_of_gravity_x": -0.5,
+        "center_of_gravity_y": 1.2,
+        "route_gradient": 8,
+        "route_curve_radius": 50,
+        "timestamp": "2024-11-16T13:30:00Z"
+      },
+      "query": "급커브 산길을 올라가야 하는데 위험하지 않을까요?",
+      "expected_response_elements": [
+        "과적재 1.5톤 (15% 초과)",
+        "후방 편중 (전방 4톤, 후방 7.5톤)",
+        "무게중심 높음 (1.2m) - 전복 위험",
+        "8도 경사 + 반경 50m 급커브",
+        "매우 위험한 조합",
+        "속도 30km/h 이하 유지",
+        "급커브 전 감속 필수",
+        "화물 재배치 권장",
+        "과적재 법규 위반"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "safety_awareness": true,
+        "contextual_reasoning": true
+      }
+    },
+    {
+      "id": "TC009",
+      "category": "Maintenance Prediction",
+      "difficulty": "medium",
+      "scenario": {
+        "total_mileage": 195000,
+        "oil_change_last": 10000,
+        "tire_tread_depth_fl": 3.2,
+        "tire_tread_depth_fr": 3.5,
+        "tire_tread_depth_rl": 2.8,
+        "tire_tread_depth_rr": 3.0,
+        "brake_pad_thickness": 4.5,
+        "dpf_soot_level": 75,
+        "timestamp": "2024-11-16T08:00:00Z"
+      },
+      "query": "다음 정비는 언제 받아야 하나요?",
+      "expected_response_elements": [
+        "총 주행거리 19.5만 km",
+        "엔진오일 1만 km 경과 - 교체 시기 (권장 1-1.5만 km)",
+        "타이어 좌후방 2.8mm - 교체 임박 (최소 3mm)",
+        "브레이크 패드 4.5mm - 양호 (교체 기준 3mm)",
+        "DPF 매연 75% - 재생 필요 (80% 이상 시 자동 재생)",
+        "엔진오일 즉시 교체",
+        "타이어 점검 및 교체 고려",
+        "20만 km 정기점검 예정"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "preventive_maintenance": true
+      }
+    },
+    {
+      "id": "TC010",
+      "category": "Emergency Response",
+      "difficulty": "hard",
+      "scenario": {
+        "vehicle_speed": 75,
+        "engine_rpm": 2200,
+        "coolant_temp": 118,
+        "oil_pressure": 1.2,
+        "dpf_status": "error",
+        "check_engine_light": true,
+        "brake_warning": true,
+        "load_weight": 9000,
+        "location": "highway",
+        "nearest_service_center_km": 35,
+        "timestamp": "2024-11-16T17:45:00Z"
+      },
+      "query": "경고등이 여러 개 켜졌어요. 어떻게 해야 하나요?",
+      "expected_response_elements": [
+        "냉각수 온도 118도 - 과열 위험 (정상 90-100도)",
+        "엔진 오일 압력 1.2 bar - 매우 낮음 (정상 3-5 bar)",
+        "DPF 에러 - 배기 시스템 문제",
+        "엔진 경고등 점등",
+        "브레이크 경고등 점등",
+        "복합 고장 가능성",
+        "즉시 안전한 곳에 정차",
+        "엔진 정지 후 냉각 대기",
+        "긴급출동 서비스 요청",
+        "견인 필요 가능성",
+        "35km 주행 시 엔진 손상 위험"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "safety_awareness": true,
+        "urgency_recognition": true
+      }
+    },
+    {
+      "id": "TC011",
+      "category": "Route Optimization",
+      "difficulty": "medium",
+      "scenario": {
+        "current_location": "Seoul",
+        "destination": "Busan",
+        "distance_highway": 400,
+        "distance_national_road": 450,
+        "fuel_level": 60,
+        "load_weight": 7000,
+        "traffic_highway": "heavy",
+        "traffic_national": "moderate",
+        "toll_fee_highway": 45000,
+        "toll_fee_national": 15000,
+        "delivery_deadline": "18:00",
+        "current_time": "14:00",
+        "timestamp": "2024-11-16T14:00:00Z"
+      },
+      "query": "서울에서 부산까지 어느 경로로 가는 게 좋을까요?",
+      "expected_response_elements": [
+        "고속도로: 400km, 통행료 4.5만원, 교통 혼잡",
+        "국도: 450km, 통행료 1.5만원, 교통 보통",
+        "배송 마감: 18시 (4시간 후)",
+        "고속도로 예상시간: 5-6시간 (혼잡)",
+        "국도 예상시간: 7-8시간",
+        "배송 마감 고려 시 고속도로 선택 필요",
+        "연료 60% 충분 (중간 주유 불필요)",
+        "출발 즉시 권장"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "contextual_reasoning": true,
+        "cost_benefit_analysis": true
+      }
+    },
+    {
+      "id": "TC012",
+      "category": "Regulatory Compliance",
+      "difficulty": "medium",
+      "scenario": {
+        "continuous_driving_time": 250,
+        "total_driving_today": 520,
+        "rest_time_today": 45,
+        "weekly_driving_time": 3200,
+        "load_weight": 11000,
+        "max_load_capacity": 10000,
+        "speed_violations_count": 2,
+        "timestamp": "2024-11-16T19:00:00Z"
+      },
+      "query": "법규를 위반한 부분이 있나요?",
+      "expected_response_elements": [
+        "연속 운전 250분 (4시간 10분) - 위반 (최대 4시간)",
+        "1일 운전 520분 (8시간 40분) - 위반 가능성 (일 9시간 제한)",
+        "주간 운전 3200분 (53.3시간) - 위반 (주 52시간 제한)",
+        "과적재 1톤 (10% 초과) - 위반",
+        "과속 2회 - 위반",
+        "즉시 휴식 필요",
+        "과적재 화물 하역 필요",
+        "법규 준수 권장"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "regulatory_knowledge": true
+      }
+    },
+    {
+      "id": "TC013",
+      "category": "Fuel Efficiency",
+      "difficulty": "medium",
+      "scenario": {
+        "vehicle_speed": 60,
+        "engine_rpm": 1400,
+        "maf": 8.5,
+        "fuel_consumption_rate": 15.2,
+        "load_weight": 6000,
+        "route_gradient": -3,
+        "timestamp": "2024-11-16T15:20:00Z"
+      },
+      "query": "내리막길에서 연비를 더 절약할 방법이 있나요?",
+      "expected_response_elements": [
+        "내리막길 -3도",
+        "현재 연비 15.2 km/L",
+        "엔진 브레이크 활용",
+        "중립 기어 금지 (위험)",
+        "배기 브레이크 사용",
+        "관성 주행 활용",
+        "불필요한 가속 자제",
+        "속도 60km/h 유지 적절"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "safety_awareness": true
+      }
+    },
+    {
+      "id": "TC014",
+      "category": "Vehicle Diagnostics",
+      "difficulty": "hard",
+      "scenario": {
+        "vehicle_speed": 85,
+        "engine_rpm": 2100,
+        "vibration_frequency": 12,
+        "steering_wheel_vibration": "high",
+        "tire_pressure_fl": 8.2,
+        "tire_pressure_fr": 8.5,
+        "tire_pressure_rl": 6.8,
+        "tire_pressure_rr": 8.0,
+        "alignment_deviation": 2.5,
+        "timestamp": "2024-11-16T12:30:00Z"
+      },
+      "query": "주행 중 핸들이 많이 떨리는데 원인이 뭔가요?",
+      "expected_response_elements": [
+        "핸들 진동 높음",
+        "진동 주파수 12Hz",
+        "좌후방 타이어 공기압 6.8 bar - 낮음 (정상 8-9 bar)",
+        "타이어 공기압 불균형",
+        "휠 얼라인먼트 편차 2.5도 - 높음",
+        "타이어 불균형 가능성",
+        "타이어 공기압 즉시 조정",
+        "휠 밸런스 점검",
+        "얼라인먼트 조정 필요"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "diagnostic_reasoning": true
+      }
+    },
+    {
+      "id": "TC015",
+      "category": "Driver Safety",
+      "difficulty": "easy",
+      "scenario": {
+        "vehicle_speed": 70,
+        "acceleration_x": 3.2,
+        "accelerator_position": 80,
+        "fuel_consumption_spike": true,
+        "timestamp": "2024-11-16T10:45:00Z"
+      },
+      "query": "급가속을 했는데 문제가 되나요?",
+      "expected_response_elements": [
+        "급가속 감지 (3.2 m/s²)",
+        "가속 페달 80% 사용",
+        "연료 소모 급증",
+        "타이어 마모 증가",
+        "승차감 저하",
+        "부드러운 가속 권장",
+        "가속 페달 50-60% 사용 권장"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true
+      }
+    },
+    {
+      "id": "TC016",
+      "category": "Load Management",
+      "difficulty": "medium",
+      "scenario": {
+        "load_weight": 9500,
+        "max_load_capacity": 10000,
+        "cargo_type": "fragile_electronics",
+        "route_road_quality": "poor",
+        "vibration_level": "high",
+        "suspension_load": 85,
+        "timestamp": "2024-11-16T16:00:00Z"
+      },
+      "query": "전자제품을 싣고 비포장 도로를 가야 하는데 괜찮을까요?",
+      "expected_response_elements": [
+        "적재량 9.5톤 (95% 사용)",
+        "깨지기 쉬운 전자제품",
+        "도로 상태 나쁨",
+        "진동 레벨 높음",
+        "서스펜션 부하 85%",
+        "화물 손상 위험",
+        "속도 30-40km/h 이하 유지",
+        "완충재 추가 권장",
+        "대체 경로 검토 권장"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "contextual_reasoning": true
+      }
+    },
+    {
+      "id": "TC017",
+      "category": "Maintenance Prediction",
+      "difficulty": "easy",
+      "scenario": {
+        "total_mileage": 50000,
+        "oil_change_last": 8000,
+        "tire_age_months": 18,
+        "brake_pad_thickness": 8.5,
+        "battery_voltage": 12.4,
+        "timestamp": "2024-11-16T09:00:00Z"
+      },
+      "query": "정기 점검 항목을 알려주세요.",
+      "expected_response_elements": [
+        "총 주행거리 5만 km",
+        "엔진오일 8천 km 경과",
+        "타이어 18개월 사용",
+        "브레이크 패드 8.5mm - 양호",
+        "배터리 전압 12.4V - 양호 (정상 12.4-12.8V)",
+        "엔진오일 2-7천 km 내 교체 권장",
+        "타이어 마모도 점검",
+        "5만 km 정기점검 예정"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true
+      }
+    },
+    {
+      "id": "TC018",
+      "category": "Emergency Response",
+      "difficulty": "medium",
+      "scenario": {
+        "vehicle_speed": 0,
+        "engine_rpm": 0,
+        "battery_voltage": 11.2,
+        "alternator_output": 0,
+        "starter_attempts": 3,
+        "starter_response": "clicking",
+        "location": "rest_area",
+        "timestamp": "2024-11-16T06:30:00Z"
+      },
+      "query": "시동이 안 걸려요. 어떻게 해야 하나요?",
+      "expected_response_elements": [
+        "배터리 전압 11.2V - 낮음 (정상 12.4-12.8V)",
+        "시동 시도 3회 실패",
+        "딸각 소리 - 배터리 방전 증상",
+        "발전기 출력 0 - 충전 불가",
+        "배터리 방전 가능성 높음",
+        "점프 스타트 시도",
+        "배터리 교체 필요 가능성",
+        "긴급출동 서비스 요청",
+        "휴게소 위치로 출동 용이"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "diagnostic_reasoning": true
+      }
+    },
+    {
+      "id": "TC019",
+      "category": "Route Optimization",
+      "difficulty": "hard",
+      "scenario": {
+        "current_location": "Incheon",
+        "destination": "Gwangju",
+        "distance_route_a": 300,
+        "distance_route_b": 280,
+        "fuel_level": 35,
+        "load_weight": 10000,
+        "route_a_gradient_avg": 2,
+        "route_b_gradient_avg": 5,
+        "route_a_toll": 35000,
+        "route_b_toll": 25000,
+        "weather_route_a": "clear",
+        "weather_route_b": "snow",
+        "delivery_priority": "high",
+        "timestamp": "2024-11-16T05:00:00Z"
+      },
+      "query": "빠르게 배송해야 하는데 어느 길로 가야 할까요?",
+      "expected_response_elements": [
+        "A경로: 300km, 경사 2도, 통행료 3.5만원, 맑음",
+        "B경로: 280km, 경사 5도, 통행료 2.5만원, 눈",
+        "B경로가 20km 짧지만 경사 높고 눈",
+        "만재 상태 (10톤)",
+        "연료 35% - 충분",
+        "우선순위 높음 (빠른 배송)",
+        "A경로 권장 (안전성)",
+        "B경로는 눈으로 지연 위험",
+        "새벽 5시 출발 - 교통 원활"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "contextual_reasoning": true,
+        "risk_assessment": true
+      }
+    },
+    {
+      "id": "TC020",
+      "category": "Regulatory Compliance",
+      "difficulty": "hard",
+      "scenario": {
+        "vehicle_type": "11_ton_truck",
+        "load_weight": 12500,
+        "max_load_capacity": 11000,
+        "hazmat_cargo": true,
+        "hazmat_placard": false,
+        "hazmat_certification": "expired",
+        "tunnel_restricted": true,
+        "timestamp": "2024-11-16T20:00:00Z"
+      },
+      "query": "위험물을 싣고 터널을 통과해도 되나요?",
+      "expected_response_elements": [
+        "위험물 적재 중",
+        "위험물 표지판 미부착 - 위반",
+        "위험물 운송 자격증 만료 - 위반",
+        "과적재 1.5톤 (13.6% 초과) - 위반",
+        "터널 통행 제한",
+        "복합 법규 위반",
+        "즉시 안전한 곳 정차",
+        "위험물 표지판 부착",
+        "자격증 갱신 필요",
+        "과적재 화물 하역",
+        "대체 경로 이용 (터널 우회)"
+      ],
+      "evaluation_criteria": {
+        "technical_accuracy": true,
+        "korean_fluency": true,
+        "completeness": true,
+        "actionable_advice": true,
+        "regulatory_knowledge": true,
+        "safety_awareness": true
+      }
+    }
+  ]
+}

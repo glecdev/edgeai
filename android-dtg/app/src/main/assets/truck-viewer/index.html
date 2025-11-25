@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GLEC DTG 3D Truck Viewer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100%;
+            height: 100vh;
+            overflow: hidden;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        #container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* HUD Overlay */
+        #hud-overlay {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 16px;
+            color: white;
+            font-size: 14px;
+            min-width: 200px;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #hud-overlay h3 {
+            margin-bottom: 12px;
+            color: #00d9ff;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .hud-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding: 4px 0;
+        }
+
+        .hud-label {
+            color: #a0a0a0;
+        }
+
+        .hud-value {
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        .hud-value.warning {
+            color: #ff9500;
+        }
+
+        .hud-value.danger {
+            color: #ff3b30;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0.3; }
+        }
+
+        /* Camera Controls */
+        #camera-controls {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .control-btn:hover {
+            background: rgba(0, 217, 255, 0.3);
+            border-color: #00d9ff;
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: rgba(0, 217, 255, 0.5);
+            border-color: #00d9ff;
+        }
+
+        /* Fault Indicator */
+        #fault-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 59, 48, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            display: none;
+            z-index: 100;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        #fault-indicator.show {
+            display: block;
+        }
+
+        /* Loading Screen */
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(0, 217, 255, 0.2);
+            border-top: 4px solid #00d9ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        #loading-text {
+            margin-top: 20px;
+            color: #00d9ff;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="container">
+        <div id="canvas-container"></div>
+
+        <!-- Loading Screen -->
+        <div id="loading">
+            <div class="spinner"></div>
+            <div id="loading-text">3D 트럭 모델 로딩 중...</div>
+        </div>
+
+        <!-- HUD Overlay -->
+        <div id="hud-overlay">
+            <h3>차량 상태</h3>
+            <div class="hud-item">
+                <span class="hud-label">속도</span>
+                <span class="hud-value" id="speed-value">0 km/h</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">엔진 RPM</span>
+                <span class="hud-value" id="rpm-value">0 RPM</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">연료</span>
+                <span class="hud-value" id="fuel-value">100%</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">냉각수 온도</span>
+                <span class="hud-value" id="temp-value">80°C</span>
+            </div>
+            <div class="hud-item">
+                <span class="hud-label">적재 무게</span>
+                <span class="hud-value" id="load-value">0 kg</span>
+            </div>
+        </div>
+
+        <!-- Fault Indicator -->
+        <div id="fault-indicator">
+            ⚠️ 고장 감지: <span id="fault-text">엔진 과열</span>
+        </div>
+
+        <!-- Camera Controls -->
+        <div id="camera-controls">
+            <button class="control-btn active" data-view="perspective">전체 뷰</button>
+            <button class="control-btn" data-view="front">정면 뷰</button>
+            <button class="control-btn" data-view="side">측면 뷰</button>
+            <button class="control-btn" data-view="top">상단 뷰</button>
+        </div>
+    </div>
+
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r152/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.152.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <!-- Main Script -->
+    <script src="truck-viewer.js"></script>
+</body>
+</html>

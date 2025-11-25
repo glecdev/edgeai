@@ -1,0 +1,282 @@
+package com.glec.dtg.ui
+
+import android.app.Application
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.glec.dtg.llm.Qwen25InferenceEngine
+import com.glec.dtg.models.VehicleData
+import io.mockk.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.*
+import org.junit.After
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.Assert.*
+
+/**
+ * DashboardViewModel Unit Tests
+ * 
+ * Spec: Test LLM integration in presentation layer
+ * Following: CLAUDE.md TDD principles (Red-Green-Refactor)
+ * 
+ * Test Strategy:
+ * - Mock Qwen25InferenceEngine to isolate ViewModel logic
+ * - Mock Application context
+ * - Verify ViewModel → LLM → UI data flow
+ * 
+ * Quality Gates:
+ * - All tests pass
+ * - >80% code coverage
+ * - No flaky tests
+ */
+@ExperimentalCoroutinesApi
+class DashboardViewModelTest {
+
+    @get:Rule
+    val instantTaskExecutorRule = InstantTaskExecutorRule()
+
+    private val testDispatcher = StandardTestDispatcher()
+    
+    private lateinit var viewModel: DashboardViewModel
+    private lateinit var mockQwenEngine: Qwen25InferenceEngine
+    private lateinit var mockApplication: Application
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(testDispatcher)
+        
+        mockQwenEngine = mockk(relaxed = true)
+        mockApplication = mockk(relaxed = true)
+        
+        // Mock Application context for DemoDataSource
+        every { mockApplication.applicationContext } returns mockApplication
+        
+        viewModel = DashboardViewModel(mockApplication, mockQwenEngine)
+        testDispatcher.scheduler.advanceUntilIdle()
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+        clearAllMocks()
+    }
+
+    /**
+     * Test 1: Engine initialization in init block
+     * 
+     * Spec: DashboardViewModel.init should:
+     * - Launch coroutine on Dispatchers.IO
+     * - Call qwenEngine.initialize()
+     * - Handle exceptions gracefully (log, don't crash)
+     */
+    @Test
+    fun `init block should initialize Qwen engine`() = runTest {
+        // Given: ViewModel created in setup()
+        advanceUntilIdle()
+        
+        // When/Then: Engine initialize should have been called
+        coVerify { mockQwenEngine.initialize() }
+    }
+
+    /**
+     * Test 2: Natural language query updates voice state
+     * 
+     * Spec: onNaturalLanguageQuery(query) should:
+     * - Set isListening = false (not listening, processing)
+     * - Set currentTranscript = query text
+     * - Set confidence = 0.0 (processing indicator)
+     */
+    @Test
+    fun `onNaturalLanguageQuery should update voice state with query text`() {
+        // Given
+        val query = "현재 적재 중량이 얼마인가요?"
+        
+        // When
+        viewModel.onNaturalLanguageQuery(query)
+        
+        // Then: Voice state should reflect processing
+        val voiceState = viewModel.voiceState.value
+        assertNotNull("Voice state should not be null", voiceState)
+        assertEquals("Current transcript should match query", query, voiceState?.currentTranscript)
+        assertEquals("Confidence should be 0 during processing", 0.0f, voiceState?.confidence)
+        assertEquals("Should not be listening", false, voiceState?.isListening)
+    }
+
+    /**
+     * Test 3: Qwen engine called with vehicle context
+     * 
+     * Spec: onNaturalLanguageQuery should:
+     * - Build VehicleData from current ViewModel state
+     * - Call qwenEngine.inference(query, vehicleData)
+     * - Update voiceState.lastResponse with result
+     * - Set confidence = 1.0 (completed)
+     */
+    @Test
+    fun `onNaturalLanguageQuery should call qwenEngine with vehicle context`() = runTest {
+        // Given
+        val query = "연비가 어때?"
+        val expectedResponse = "현재 연비는 7.1km/L입니다."
+        
+        coEvery { 
+            mockQwenEngine.inference(query, any<VehicleData>()) 
+        } returns expectedResponse
+        
+        // When
+        viewModel.onNaturalLanguageQuery(query)
+        advanceUntilIdle()
+        
+        // Then: Engine called with correct parameters
+        coVerify { 
+            mockQwenEngine.inference(
+                eq(query), 
+                match { it is VehicleData }
+            ) 
+        }
+        
+        // And: Response updated in voice state
+        val voiceState = viewModel.voiceState.value
+        assertEquals("Response should be set", expectedResponse, voiceState?.lastResponse)
+        assertEquals("Confidence should be 1.0 after completion", 1.0f, voiceState?.confidence)
+    }
+
+    /**
+     * Test 4: Vehicle context includes current sensor data
+     * 
+     * Spec: VehicleData passed to LLM should include:
+     * - vehicleSpeed (from _vehicleSpeed LiveData)
+     * - engineRPM (from _engineRPM LiveData)
+     * - fuelEfficiency (from _fuelEfficiency LiveData)
+     * - cargoWeight, tirePressure, engineTemp (defaults: 5000.0, 220.0, 85.0)
+     */
+    @Test
+    fun `vehicle context should include current sensor values`() = runTest {
+        // Given: Demo data sets initial values (speed=90, rpm=2263, fuel=7.1)
+        
+        // Capture the VehicleData argument passed to engine
+        val capturedData = slot<VehicleData>()
+        coEvery { 
+            mockQwenEngine.inference(any(), capture(capturedData)) 
+        } returns "테스트 응답"
+        
+        // When
+        viewModel.onNaturalLanguageQuery("차량 상태는?")
+        advanceUntilIdle()
+        
+        // Then: Captured data should match ViewModel state
+        val data = capturedData.captured
+        assertEquals("Speed should match", 90.0, data.vehicleSpeed, 0.1)
+        assertEquals("RPM should match", 2263.0, data.engineRPM, 1.0)
+        assertEquals("Fuel efficiency should match", 7.1, data.fuelEfficiency, 0.1)
+        assertEquals("Cargo weight should be default", 5000.0, data.cargoWeight, 0.1)
+        assertEquals("Tire pressure should be default", 220.0, data.tirePressure, 0.1)
+        assertEquals("Engine temp should be default", 85.0, data.engineTemp, 0.1)
+    }
+
+    /**
+     * Test 5: Error handling with user-friendly message
+     * 
+     * Spec: When qwenEngine.inference() throws exception:
+     * - Catch exception (don't crash ViewModel)
+     * - Log error (for debugging)
+     * - Set lastResponse = "죄송합니다. 처리 중 오류가 발생했습니다."
+     * - Set confidence = 0.0 (failed)
+     */
+    @Test
+    fun `onNaturalLanguageQuery should handle inference error gracefully`() = runTest {
+        // Given: Engine throws exception
+        val query = "엔진 상태는?"
+        coEvery { 
+            mockQwenEngine.inference(any(), any()) 
+        } throws Exception("Model not loaded")
+        
+        // When
+        viewModel.onNaturalLanguageQuery(query)
+        advanceUntilIdle()
+        
+        // Then: User-friendly error message shown, no crash
+        val voiceState = viewModel.voiceState.value
+        assertEquals(
+            "Error message should be user-friendly",
+            "죄송합니다. 처리 중 오류가 발생했습니다.", 
+            voiceState?.lastResponse
+        )
+        assertEquals("Confidence should be 0 on error", 0.0f, voiceState?.confidence)
+    }
+
+    /**
+     * Test 6: Resource cleanup in onCleared
+     * 
+     * Spec: onCleared() should:
+     * - Call qwenEngine.release()
+     * - Free ONNX Runtime resources (~600MB memory)
+     * - Prevent memory leaks
+     */
+    @Test
+    fun `onCleared should release qwenEngine resources`() {
+        // When
+        viewModel.onCleared()
+        
+        // Then: Engine release called
+        verify { mockQwenEngine.release() }
+    }
+
+    /**
+     * Test 7: Concurrent queries handled correctly
+     * 
+     * Spec: Multiple rapid queries should:
+     * - Queue properly via suspend functions
+     * - Each complete without race conditions
+     * - Last query's response shown in UI
+     */
+    @Test
+    fun `concurrent queries should complete without race conditions`() = runTest {
+        // Given: Slow inference simulation
+        coEvery { mockQwenEngine.inference(any(), any()) } coAnswers {
+            kotlinx.coroutines.delay(100) // Simulate 100ms inference
+            "응답: ${firstArg<String>()}"
+        }
+        
+        // When: Submit two queries rapidly
+        viewModel.onNaturalLanguageQuery("첫번째 질문")
+        viewModel.onNaturalLanguageQuery("두번째 질문")
+        advanceUntilIdle()
+        
+        // Then: Both queries processed
+        coVerify(exactly = 2) { 
+            mockQwenEngine.inference(any(), any()) 
+        }
+        
+        // And: Last response shown
+        val lastResponse = viewModel.voiceState.value?.lastResponse
+        assertTrue(
+            "Last query's response should be shown",
+            lastResponse?.contains("두번째") == true
+        )
+    }
+
+    /**
+     * Test 8: Empty/blank query ignored
+     * 
+     * Spec: onNaturalLanguageQuery("   ") should:
+     * - Not call LLM engine (waste of resources)
+     * - Not update voice state
+     */
+    @Test
+    fun `blank query should not trigger LLM call`() = runTest {
+        // Given
+        val blankQuery = "   "
+        
+        // When
+        viewModel.onNaturalLanguageQuery(blankQuery)
+        advanceUntilIdle()
+        
+        // Then: Engine not called (would be wasteful)
+        // Note: Current implementation doesn't check for blank,
+        // this test will FAIL in RED phase (as expected!)
+        // We'll add validation in GREEN phase
+        coVerify(exactly = 0) { 
+            mockQwenEngine.inference(any(), any()) 
+        }
+    }
+}

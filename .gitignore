@@ -52,7 +52,16 @@ ENV/
 
 # Exception: Allow small ONNX models in Android assets (< 15KB)
 # LightGBM behavior classification model: 12.62 KB
-!android-dtg/app/src/main/assets/models/*.onnx
+!android-dtg/app/src/main/assets/models/lightgbm_behavior.onnx
+!android-dtg/app/src/main/assets/models/lightgbm_behavior_final.onnx
+!android-dtg/app/src/main/assets/models/lstm_ae_anomaly_detection.onnx
+!android-dtg/app/src/main/assets/models/tcn_fuel_prediction.onnx
+
+# Large LLM model files (>100MB) - use Git LFS or download at runtime
+android-dtg/app/src/main/assets/models/*.safetensors
+android-dtg/app/src/main/assets/models/qwen-truck-ko.onnx
+android-dtg/app/src/main/assets/models/qwen-truck-korean/
+android-dtg/app/src/main/assets/models/qwen-truck-korean-int8/
 
 # Training artifacts
 mlruns/
@@ -259,3 +268,5 @@ htmlcov/
 # ============================================
 .claude/skills/*/logs/
 .claude/skills/*/*.log
+datasets/production_real_structure/
+datasets/real_structure_test/
